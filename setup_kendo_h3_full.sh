@@ -32,13 +32,25 @@ echo ""
 echo "=== [1/5] อัปเดต ComfyUI ให้เป็นเวอร์ชันล่าสุด (H3 ต้อง >= 0.33) ==="
 # ============================================================
 cd "$COMFY"
-git fetch origin || true
-# บาง image อยู่สถานะ detached — บังคับไป master ก่อน
-git checkout master 2>/dev/null || git checkout -b master origin/master 2>/dev/null || true
-git branch --set-upstream-to=origin/master master 2>/dev/null || true
-git pull origin master || echo "⚠️ git pull ไม่ผ่าน (อาจ freeze) — ข้ามไปก่อน"
-$PIP install -r requirements.txt
-echo "   -> ComfyUI version:"; git describe --tags 2>/dev/null || true
+BEFORE_VER=$(git describe --tags 2>/dev/null || echo "?")
+UPDATED=0
+if git fetch origin master 2>/dev/null; then
+  # บังคับให้ตรงกับ master ล่าสุดเป๊ะ (แก้ปัญหา divergent/detached ของ image)
+  if git reset --hard origin/master 2>/dev/null; then
+    UPDATED=1
+    echo "   ✅ อัป ComfyUI เป็น master ล่าสุดแล้ว"
+  fi
+fi
+
+if [ "$UPDATED" = "1" ]; then
+  # ลง requirements เฉพาะตอนอัปสำเร็จ — กัน pip ดาวน์เกรด package ตาม requirements เก่า
+  $PIP install -r requirements.txt
+else
+  echo "   ⚠️ อัปไม่สำเร็จ — คงเวอร์ชันเดิมไว้ (ไม่รัน pip เพื่อกันดาวน์เกรด)"
+  echo "   ถ้า H3 ยัง missing node ให้ใช้ ComfyUI-Manager > Update ComfyUI แทน"
+fi
+NOW_VER=$(git describe --tags 2>/dev/null || echo "?")
+echo "   -> ComfyUI version: $BEFORE_VER -> $NOW_VER"
 
 # ============================================================
 echo ""
