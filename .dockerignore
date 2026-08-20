@@ -1,0 +1,7 @@
+.git
+.github
+*.zip
+*.log
+models/
+output/
+__pycache__/
