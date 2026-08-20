@@ -10,7 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     CUDA_HOME=/usr/local/cuda \
     TORCH_CUDA_ARCH_LIST=12.0 \
     PIP_CONSTRAINT=/opt/comfyui-runtime-constraints.txt \
-    KENDO_IMAGE_VERSION=1.0.2
+    KENDO_IMAGE_VERSION=1.1.0
 
 USER root
 
@@ -83,7 +83,7 @@ RUN set -eux; \
     rm -rf /tmp/SageAttention
 
 RUN printf '%s\n' \
-      "KENDO_IMAGE_VERSION=1.0.2" \
+      "KENDO_IMAGE_VERSION=1.1.0" \
       "COMFYUI_VERSION=${COMFYUI_VERSION}" \
       "VHS_COMMIT=${VHS_COMMIT}" \
       "MINIMAX_AIO_COMMIT=${MINIMAX_AIO_COMMIT}" \
@@ -93,6 +93,7 @@ RUN printf '%s\n' \
 
 COPY scripts/download-models.sh /opt/kendo/download-models.sh
 COPY scripts/entrypoint.sh /opt/kendo/entrypoint.sh
+COPY web /opt/kendo-page
 RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint.sh
 
 ENTRYPOINT ["/opt/kendo/entrypoint.sh"]

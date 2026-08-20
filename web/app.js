@@ -1,0 +1,73 @@
+const $ = (selector) => document.querySelector(selector);
+const refs = [null];
+const imageNodeIds = ["153", "156", "158", "159", "160"];
+let busy = false;
+
+function comfyBase() {
+  const origin = window.location.origin;
+  if (/^https:\/\/[a-z0-9]+-3000\.proxy\.runpod\.net$/i.test(origin)) return origin.replace(/-3000\.proxy\.runpod\.net$/i, "-8188.proxy.runpod.net");
+  return "http://127.0.0.1:8188";
+}
+
+function node(class_type, title, inputs) { return { inputs, class_type, _meta: { title } }; }
+function buildWorkflow({ prompt, ratio, megapixels, duration, steps, images }) {
+  const aspect = { "16:9": "16:9 (Widescreen)", "9:16": "9:16 (Portrait Widescreen)", "1:1": "1:1 (Square)" }[ratio];
+  const w = {
+    "92":node("SaveVideo","Save Video",{filename_prefix:"video/Kendo_Ai_H3",format:"auto",codec:"auto",video:["130",0]}),
+    "115":node("ResolutionSelector","Resolution Selector (Size)",{aspect_ratio:aspect,megapixels,multiple:32}),
+    "119":node("VAELoader","Load VAE",{vae_name:"minimax_h3_video_vae_fp16.safetensors"}),
+    "120":node("VAELoader","Load VAE",{vae_name:"minimax_h3_audio_vae_fp32.safetensors"}),
+    "121":node("VAEDecodeAudio","VAE Decode Audio",{samples:["125",0],vae:["120",0]}),
+    "122":node("VAEDecode","VAE Decode",{samples:["125",0],vae:["119",0]}),
+    "123":node("KSamplerSelect","KSamplerSelect",{sampler_name:"res_multistep"}),
+    "124":node("BasicScheduler","BasicScheduler",{scheduler:"simple",steps:["142",0],denoise:1,model:["127",0]}),
+    "125":node("SamplerCustomAdvanced","SamplerCustomAdvanced",{noise:["129",0],guider:["126",0],sampler:["123",0],sigmas:["124",0],latent_image:["136",1]}),
+    "126":node("BasicGuider","Basic Guider",{model:["141",0],conditioning:["136",0]}),
+    "127":node("UNETLoader","Load Diffusion Model",{unet_name:"minimax_h3_fl2va_pruned_int8_convrot.safetensors",weight_dtype:"default"}),
+    "128":node("CLIPLoader","Load CLIP",{clip_name:"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",type:"minimax",device:"default"}),
+    "129":node("RandomNoise","RandomNoise",{noise_seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER)}),
+    "130":node("CreateVideo","Create Video",{fps:24,bit_depth:8,images:["122",0],audio:["121",0]}),
+    "131":node("ComfyMathExpression","Math Expression",{expression:"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17","values.a":["132",0]}),
+    "132":node("PrimitiveFloat","Float (Duration)",{value:duration}),
+    "136":node("MiniMaxH3ReferenceToVideo","MiniMax H3 Reference to Video",{prompt:["138",0],width:["115",0],height:["115",1],length:["131",1],ref_image_size:"match",clip:["128",0],vae:["119",0],audio_vae:["120",0],"ref_images.ref_image_0":["151",0]}),
+    "138":node("PrimitiveStringMultiline","Input Text (Prompt)",{value:prompt}),
+    "141":node("ComfySwitchNode","If/Else Switch (model)",{switch:["146",0],on_false:["127",0],on_true:["145",0]}),
+    "142":node("ComfySwitchNode","If/Else Switch (Steps)",{switch:["146",0],on_false:["143",0],on_true:["144",0]}),
+    "143":node("PrimitiveInt","Int (Full)",{value:steps}),
+    "144":node("PrimitiveInt","Int (Lightning LoRA)",{value:4}),
+    "145":node("LoraLoaderModelOnly","Load LoRA",{lora_name:"minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors",strength_model:1,model:["127",0]}),
+    "146":node("PrimitiveBoolean","Boolean (Enable Lightning LoRA)",{value:false})
+  };
+  const batch = { inputcount: images.length, "Update inputs": null };
+  images.forEach((name,index)=>{const id=imageNodeIds[index];w[id]=node("LoadImage","Load Image",{image:name});batch[`image_${index+1}`]=[id,0]});
+  w["151"] = node("ImageBatchMulti","Image Batch Multi",batch);
+  return w;
+}
+
+function renderRefs() {
+  const grid = $("#reference-grid"); grid.innerHTML = "";
+  refs.forEach((item,index)=>{
+    const card=document.createElement("label");card.className="upload";
+    card.innerHTML=item?`<img src="${item.preview}" alt="ภาพอ้างอิง ${index+1}"><button class="remove" type="button" aria-label="ลบภาพ">×</button><input type="file" accept="image/png,image/jpeg,image/webp">`:`<span class="placeholder"><strong>＋</strong><b>${index===0?"อัปโหลดภาพหลัก":"ภาพเพิ่มเติม"}</b><small>JPG · PNG · WEBP</small></span><input type="file" accept="image/png,image/jpeg,image/webp">`;
+    card.querySelector("input").addEventListener("change",event=>{const file=event.target.files[0];if(!file)return;if(refs[index])URL.revokeObjectURL(refs[index].preview);refs[index]={file,preview:URL.createObjectURL(file)};renderRefs()});
+    card.querySelector(".remove")?.addEventListener("click",event=>{event.preventDefault();URL.revokeObjectURL(refs[index].preview);refs.splice(index,1);if(!refs.length)refs.push(null);renderRefs()});grid.append(card)
+  });
+  if(refs.length<5){const add=document.createElement("button");add.className="add-upload";add.type="button";add.innerHTML="<strong>＋</strong><b>เพิ่มภาพอ้างอิง</b><small>สูงสุด 5 ภาพ</small>";add.onclick=()=>{refs.push(null);renderRefs()};grid.append(add)}
+  $("#file-count").textContent=`${refs.filter(Boolean).length} / 5 FILES`;
+}
+
+function setStatus(type,text,message){const status=$("#status");status.className=`status ${type}`;status.innerHTML=`<i></i>${text}`;$("#activity-state").textContent=message;$("#progress").classList.toggle("active",type==="running");}
+function findVideo(value){if(!value||typeof value!=="object")return null;if(Array.isArray(value)){for(const item of value){const found=findVideo(item);if(found)return found}return null}if(typeof value.filename==="string"&&/\.(mp4|webm|mov|mkv|gif)$/i.test(value.filename))return value;for(const item of Object.values(value)){const found=findVideo(item);if(found)return found}return null}
+function viewUrl(file){const q=new URLSearchParams({filename:file.filename,subfolder:file.subfolder||"",type:file.type||"output"});return `${comfyBase()}/view?${q}`}
+function saveHistory(item){const items=JSON.parse(localStorage.getItem("kendo-ai-pod-history")||"[]");const next=[item,...items.filter(x=>x.id!==item.id)].slice(0,20);localStorage.setItem("kendo-ai-pod-history",JSON.stringify(next));renderHistory()}
+function renderHistory(){const items=JSON.parse(localStorage.getItem("kendo-ai-pod-history")||"[]");$("#history-count").textContent=`${items.length} ผลงาน`;const content=$("#history-content");if(!items.length)return;content.className="history-grid";content.innerHTML=items.map(item=>`<article class="history-card"><video src="${item.url}" controls preload="metadata"></video><div><small>${new Date(item.createdAt).toLocaleString("th-TH")}</small><b>${item.ratio} · MiniMax H3</b><p>${item.prompt.replace(/[<>]/g,"")}</p><a href="${item.url}" download>↓ ดาวน์โหลด</a></div></article>`).join("")}
+async function waitForJob(id,meta){while(true){await new Promise(r=>setTimeout(r,3000));const response=await fetch(`${comfyBase()}/history/${encodeURIComponent(id)}`,{cache:"no-store"});if(!response.ok)throw new Error("ตรวจสอบสถานะไม่สำเร็จ");const history=await response.json();const entry=history[id];if(!entry)continue;const file=findVideo(entry.outputs);if(file){const url=viewUrl(file);showVideo(url);saveHistory({id,url,createdAt:new Date().toISOString(),...meta});return}if(entry.status?.status_str==="error"||entry.status?.completed===false)throw new Error("ComfyUI ประมวลผลไม่สำเร็จ")}}
+function showVideo(url){const preview=$("#preview");preview.querySelector("video")?.remove();const video=document.createElement("video");video.src=url;video.controls=true;video.playsInline=true;preview.append(video);$("#download").href=url;$("#download").classList.remove("disabled")}
+
+async function generate(){if(busy)return;const files=refs.filter(Boolean).map(x=>x.file);const prompt=$("#prompt").value.trim();if(!files.length)return $("#notice").textContent="กรุณาแนบภาพอ้างอิงอย่างน้อย 1 ภาพ";if(!prompt)return $("#notice").textContent="กรุณากรอกคำอธิบายการเคลื่อนไหว";busy=true;$("#generate").disabled=true;$("#generate span").textContent="กำลังสร้างวิดีโอ...";setStatus("running","WORKING","กำลังอัปโหลดภาพ");$("#progress").classList.add("active");try{const names=[];for(let i=0;i<files.length;i++){const form=new FormData();form.append("image",files[i],`${Date.now()}-${i+1}-${files[i].name.replace(/[^a-zA-Z0-9._-]/g,"_")}`);form.append("subfolder","kendo-ai");form.append("type","input");form.append("overwrite","true");const response=await fetch(`${comfyBase()}/upload/image`,{method:"POST",body:form});if(!response.ok)throw new Error("อัปโหลดภาพไม่สำเร็จ");const result=await response.json();names.push(result.subfolder?`${result.subfolder}/${result.name}`:result.name)}const ratio=$("#ratio").value;const workflow=buildWorkflow({prompt,ratio,megapixels:Number($("#quality").value),duration:Number($("#duration").value),steps:Number($("#steps").value),images:names});const response=await fetch(`${comfyBase()}/prompt`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});const result=await response.json();if(!response.ok||!result.prompt_id)throw new Error(result.error?.message||"ส่ง Workflow ไม่สำเร็จ");$("#notice").textContent="ส่งงานเข้า Kendo H3 Engine แล้ว";setStatus("running","RUNNING","กำลังประมวลผลบน GPU");await waitForJob(result.prompt_id,{prompt,ratio});setStatus("done","DONE","สร้างวิดีโอสำเร็จ");$("#notice").textContent="สร้างวิดีโอสำเร็จแล้ว"}catch(error){setStatus("error","ERROR","เกิดข้อผิดพลาด");$("#notice").textContent=error.message||"เชื่อมต่อ ComfyUI ไม่สำเร็จ"}finally{busy=false;$("#generate").disabled=false;$("#generate span").textContent="สร้างวิดีโอ";$("#progress").classList.remove("active")}}
+
+$("#prompt").addEventListener("input",event=>{const words=Array.from(new Intl.Segmenter("th",{granularity:"word"}).segment(event.target.value)).filter(x=>x.isWordLike).length;$("#word-count").textContent=`${words.toLocaleString("th-TH")} / 5,000 คำ`;if(words>5000)event.target.value=event.target.value.slice(0,-1)});
+$("#ratio").addEventListener("change",event=>{$("#preview").className=`preview ratio-${event.target.value.replace(":","-")}`;$("#meta-ratio").textContent=event.target.value});
+$("#quality").addEventListener("change",event=>$("#meta-resolution").textContent=`${Number(event.target.value).toFixed(1)} MP`);
+$("#steps").addEventListener("input",event=>{$("#meta-steps").textContent=Math.min(50,Math.max(1,Number(event.target.value)||1))});
+$("#generate").addEventListener("click",generate);renderRefs();renderHistory();

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#09090b" />
+  <title>Kendo Ai | H3 Studio</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">KENDO AI</div>
+  <header class="topbar">
+    <a class="brand" href="#create"><span>K</span><b>Kendo <i>Ai</i></b></a>
+    <nav><a href="#create">สร้างวิดีโอ</a><a href="#history">ผลงานที่ผ่านมา</a></nav>
+    <div class="engine"><i></i> H3 ENGINE</div>
+  </header>
+
+  <main class="workspace" id="create">
+    <section class="panel composer">
+      <header class="section-head"><div><h1>สร้างวิดีโอใหม่</h1><small>NEW GENERATION</small></div><em>DRAFT</em></header>
+      <div class="mode"><strong>R2V</strong><div><b>Reference to Video</b><span>สร้างฉากเคลื่อนไหวจากภาพอ้างอิง 1–5 ภาพ</span></div><i>✓</i></div>
+
+      <label class="field"><span class="label-row"><b>คำอธิบายการเคลื่อนไหว</b><small id="word-count">0 / 5,000 คำ</small></span><textarea id="prompt" placeholder="อธิบายฉาก การเคลื่อนกล้อง การเคลื่อนไหวของตัวละคร แสง และบรรยากาศ..."></textarea><small class="tip">ระบุการเคลื่อนกล้องและแสงให้ชัดเจน เพื่อให้ผลลัพธ์สม่ำเสมอ</small></label>
+
+      <section class="field">
+        <span class="label-row"><span><b>ภาพอ้างอิง</b><small>อย่างน้อย 1 ภาพ · สูงสุด 5 ภาพ</small></span><small id="file-count">0 / 5 FILES</small></span>
+        <div class="reference-grid" id="reference-grid"></div>
+      </section>
+
+      <section class="settings">
+        <span class="label-row"><b>การตั้งค่าผลลัพธ์</b></span>
+        <div class="settings-grid">
+          <label><span>สัดส่วนภาพ</span><select id="ratio"><option value="16:9">16:9</option><option value="9:16" selected>9:16</option><option value="1:1">1:1</option></select></label>
+          <label><span>ความยาว</span><select id="duration"><option value="5">5 วินาที</option><option value="10">10 วินาที</option></select></label>
+          <label><span>คุณภาพ</span><select id="quality"><option value="0.4">Draft · 0.4 MP</option><option value="0.7">Balanced · 0.7 MP</option><option value="1">High · 1.0 MP</option></select></label>
+          <label><span>Generation Steps</span><input id="steps" type="number" min="1" max="50" value="10" /></label>
+        </div>
+      </section>
+
+      <div class="actions"><div><small>EST. RUNTIME</small><b>ประมาณ 4–8 นาที</b></div><button id="generate" type="button">✦ <span>สร้างวิดีโอ</span> →</button></div>
+      <p class="notice" id="notice" aria-live="polite"></p>
+    </section>
+
+    <aside class="panel output">
+      <header class="section-head"><div><h2>ผลลัพธ์</h2><small>OUTPUT PREVIEW</small></div><div class="output-actions"><span class="status" id="status"><i></i>IDLE</span><a id="download" class="download disabled">↓ ดาวน์โหลด</a></div></header>
+      <div class="preview ratio-9-16" id="preview"><div class="grid"></div><div class="empty"><strong>K</strong><h3>พร้อมสำหรับการสร้าง</h3><p>ตัวอย่างวิดีโอและสถานะการประมวลผล<br>จะแสดงในพื้นที่นี้</p></div></div>
+      <div class="meta"><div><small>MODEL</small><b>MiniMax H3</b></div><div><small>RESOLUTION</small><b id="meta-resolution">0.4 MP</b></div><div><small>FORMAT</small><b id="meta-ratio">9:16</b></div><div><small>STEPS</small><b id="meta-steps">10</b></div></div>
+      <div class="activity"><span><b>สถานะงาน</b><strong id="activity-state">ยังไม่มีงานในคิว</strong></span><div class="progress" id="progress"><i></i></div><p id="activity-text">เมื่อเริ่มสร้าง คุณสามารถติดตามขั้นตอนได้จากตรงนี้</p></div>
+    </aside>
+  </main>
+
+  <section class="history" id="history"><header class="section-head"><div><h2>ผลงานที่ผ่านมา</h2><small>GENERATION LIBRARY</small></div><em id="history-count">0 ผลงาน</em></header><div id="history-content" class="history-empty"><strong>K</strong><div><h3>ยังไม่มีผลงานที่สร้างไว้</h3><p>วิดีโอที่สร้างสำเร็จจะแสดงในพื้นที่นี้ พร้อมปุ่มดูซ้ำและดาวน์โหลด</p></div></div></section>
+  <script src="/app.js" defer></script>
+</body>
+</html>
