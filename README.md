@@ -4,7 +4,7 @@ One-click RunPod image for MiniMax H3 on RTX 5090 and RTX PRO 6000 Blackwell.
 
 ## Included
 
-- RunPod ComfyUI CUDA 13 base, pinned to `runpod/comfyui:2.0.0-cuda13.0`
+- RunPod ComfyUI CUDA 13 base, pinned to `runpod/comfyui:1.4.4-cuda13.0`
 - ComfyUI `v0.33.2`
 - ComfyUI-Manager and ComfyUI-KJNodes from the RunPod base image
 - ComfyUI-VideoHelperSuite

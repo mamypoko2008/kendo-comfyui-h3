@@ -1,4 +1,4 @@
-FROM runpod/comfyui:2.0.0-cuda13.0
+FROM runpod/comfyui:1.4.4-cuda13.0
 
 ARG COMFYUI_VERSION=v0.33.2
 ARG VHS_COMMIT=4ee72c065db22c9d96c2427954dc69e7b908444b
