@@ -33,9 +33,16 @@ if [[ "${KENDO_ENABLE_SAGE:-1}" == "1" ]] && \
 fi
 
 if [[ "${KENDO_AUTO_DOWNLOAD_MODELS:-1}" == "1" ]]; then
-  nohup /opt/kendo/download-models.sh \
-    > /workspace/kendo-model-download.log 2>&1 &
-  echo "[KENDO] Model downloader started; log: /workspace/kendo-model-download.log"
+  if [[ "${KENDO_WAIT_FOR_MODELS:-1}" == "1" ]]; then
+    echo "[KENDO] Waiting for all MiniMax H3 models before starting services"
+    /opt/kendo/download-models.sh \
+      > >(tee /workspace/kendo-model-download.log) 2>&1
+    echo "[KENDO] Models verified; starting ComfyUI services"
+  else
+    nohup /opt/kendo/download-models.sh \
+      > /workspace/kendo-model-download.log 2>&1 &
+    echo "[KENDO] Model downloader started in background; log: /workspace/kendo-model-download.log"
+  fi
 fi
 
 # Delegate SSH, FileBrowser, Jupyter, venv creation, upgrades, and the ComfyUI

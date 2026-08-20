@@ -60,6 +60,7 @@ credentials before it can pull the image.
 | Docker command | Leave empty |
 | Sage | `KENDO_ENABLE_SAGE=1` |
 | Model download | `KENDO_AUTO_DOWNLOAD_MODELS=1` |
+| Wait for models | `KENDO_WAIT_FOR_MODELS=1` |
 
 Use RTX 5090 or RTX PRO 6000 Blackwell. Both expose compute capability 12.0,
 which matches the baked SageAttention kernel.
@@ -93,3 +94,6 @@ Run one short H3 generation before publishing the deploy link.
   volume.
 - Model downloads use `.part` files and atomic rename. Undersized existing files
   are preserved with an `.incomplete.<timestamp>` suffix rather than deleted.
+- With `KENDO_WAIT_FOR_MODELS=1` (the default), RunPod services remain in
+  `Initializing` until all five model files pass their minimum-size checks.
+  Set it to `0` only when background downloading is explicitly preferred.
