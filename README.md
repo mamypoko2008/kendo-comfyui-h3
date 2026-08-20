@@ -52,7 +52,7 @@ credentials before it can pull the image.
 
 | Setting | Value |
 |---|---|
-| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.0` |
+| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.1` |
 | Container disk | 30 GB minimum |
 | Volume / network volume | 100 GB minimum, mounted at `/workspace` |
 | HTTP ports | `3000,8188,8888` (`Page`, `ComfyUI`, `JupyterLab`) |

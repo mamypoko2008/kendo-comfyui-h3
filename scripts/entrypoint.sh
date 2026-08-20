@@ -48,7 +48,7 @@ if [[ "${KENDO_AUTO_DOWNLOAD_MODELS:-1}" == "1" ]]; then
   fi
 fi
 
-nohup python3 -m http.server 3000 --bind 0.0.0.0 --directory /opt/kendo-page \
+nohup python3.12 -m http.server 3000 --bind 0.0.0.0 --directory /opt/kendo-page \
   > /workspace/kendo-page.log 2>&1 &
 echo "[KENDO] Page started on port 3000"
 

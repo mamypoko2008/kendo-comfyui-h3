@@ -3,6 +3,37 @@ const refs = [null];
 const imageNodeIds = ["153", "156", "158", "159", "160"];
 let busy = false;
 
+const resolutionOutputs = {
+  "0.4": [864, 480],
+  "0.7": [1152, 640],
+  "0.9": [1280, 736],
+  "1": [1376, 768],
+  "1.2": [1504, 832],
+  "2": [1920, 1088]
+};
+
+function outputSize(megapixels, ratio) {
+  const [wideWidth, wideHeight] = resolutionOutputs[String(megapixels)] || resolutionOutputs["0.4"];
+  if (ratio === "9:16") return `${wideHeight} × ${wideWidth}`;
+  if (ratio === "1:1") {
+    const side = Math.round(Math.sqrt(Number(megapixels) * 1000000) / 32) * 32;
+    return `${side} × ${side}`;
+  }
+  return `${wideWidth} × ${wideHeight}`;
+}
+
+function updateResolutionLabels() {
+  const ratio = $("#ratio").value;
+  const quality = $("#quality");
+  const names = { "0.4": "Draft", "0.7": "Balanced" };
+  Array.from(quality.options).forEach(option => {
+    const mp = option.value;
+    option.textContent = `${names[mp] ? `${names[mp]} · ` : ""}${Number(mp).toFixed(1)} MP · ${outputSize(mp, ratio)}`;
+  });
+  const mp = quality.value;
+  $("#meta-resolution").textContent = `${Number(mp).toFixed(1)} MP · ${outputSize(mp, ratio)}`;
+}
+
 function comfyBase() {
   const origin = window.location.origin;
   if (/^https:\/\/[a-z0-9]+-3000\.proxy\.runpod\.net$/i.test(origin)) return origin.replace(/-3000\.proxy\.runpod\.net$/i, "-8188.proxy.runpod.net");
@@ -67,7 +98,8 @@ function showVideo(url){const preview=$("#preview");preview.querySelector("video
 async function generate(){if(busy)return;const files=refs.filter(Boolean).map(x=>x.file);const prompt=$("#prompt").value.trim();if(!files.length)return $("#notice").textContent="กรุณาแนบภาพอ้างอิงอย่างน้อย 1 ภาพ";if(!prompt)return $("#notice").textContent="กรุณากรอกคำอธิบายการเคลื่อนไหว";busy=true;$("#generate").disabled=true;$("#generate span").textContent="กำลังสร้างวิดีโอ...";setStatus("running","WORKING","กำลังอัปโหลดภาพ");$("#progress").classList.add("active");try{const names=[];for(let i=0;i<files.length;i++){const form=new FormData();form.append("image",files[i],`${Date.now()}-${i+1}-${files[i].name.replace(/[^a-zA-Z0-9._-]/g,"_")}`);form.append("subfolder","kendo-ai");form.append("type","input");form.append("overwrite","true");const response=await fetch(`${comfyBase()}/upload/image`,{method:"POST",body:form});if(!response.ok)throw new Error("อัปโหลดภาพไม่สำเร็จ");const result=await response.json();names.push(result.subfolder?`${result.subfolder}/${result.name}`:result.name)}const ratio=$("#ratio").value;const workflow=buildWorkflow({prompt,ratio,megapixels:Number($("#quality").value),duration:Number($("#duration").value),steps:Number($("#steps").value),images:names});const response=await fetch(`${comfyBase()}/prompt`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});const result=await response.json();if(!response.ok||!result.prompt_id)throw new Error(result.error?.message||"ส่ง Workflow ไม่สำเร็จ");$("#notice").textContent="ส่งงานเข้า Kendo H3 Engine แล้ว";setStatus("running","RUNNING","กำลังประมวลผลบน GPU");await waitForJob(result.prompt_id,{prompt,ratio});setStatus("done","DONE","สร้างวิดีโอสำเร็จ");$("#notice").textContent="สร้างวิดีโอสำเร็จแล้ว"}catch(error){setStatus("error","ERROR","เกิดข้อผิดพลาด");$("#notice").textContent=error.message||"เชื่อมต่อ ComfyUI ไม่สำเร็จ"}finally{busy=false;$("#generate").disabled=false;$("#generate span").textContent="สร้างวิดีโอ";$("#progress").classList.remove("active")}}
 
 $("#prompt").addEventListener("input",event=>{const words=Array.from(new Intl.Segmenter("th",{granularity:"word"}).segment(event.target.value)).filter(x=>x.isWordLike).length;$("#word-count").textContent=`${words.toLocaleString("th-TH")} / 5,000 คำ`;if(words>5000)event.target.value=event.target.value.slice(0,-1)});
-$("#ratio").addEventListener("change",event=>{$("#preview").className=`preview ratio-${event.target.value.replace(":","-")}`;$("#meta-ratio").textContent=event.target.value});
-$("#quality").addEventListener("change",event=>$("#meta-resolution").textContent=`${Number(event.target.value).toFixed(1)} MP`);
+$("#ratio").addEventListener("change",event=>{$("#preview").className=`preview ratio-${event.target.value.replace(":","-")}`;$("#meta-ratio").textContent=event.target.value;updateResolutionLabels()});
+$("#quality").addEventListener("change",updateResolutionLabels);
+$("#duration").addEventListener("input",event=>$("#duration-value").textContent=`${Number(event.target.value).toLocaleString("th-TH",{maximumFractionDigits:1})} วินาที`);
 $("#steps").addEventListener("input",event=>{$("#meta-steps").textContent=Math.min(50,Math.max(1,Number(event.target.value)||1))});
-$("#generate").addEventListener("click",generate);renderRefs();renderHistory();
+$("#generate").addEventListener("click",generate);updateResolutionLabels();renderRefs();renderHistory();

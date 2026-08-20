@@ -6,6 +6,12 @@
   <meta name="theme-color" content="#09090b" />
   <title>Kendo Ai | H3 Studio</title>
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .duration-control .control-heading{display:flex;align-items:center;justify-content:space-between;margin:0 2px 8px}
+    .duration-control .control-heading>span{margin:0}.duration-control .control-heading b{color:#eeeef1;font-size:10px}
+    .duration-control input[type="range"]{width:100%;height:18px;margin:3px 0 0;accent-color:var(--red);cursor:pointer}
+    .duration-control>small{display:flex;justify-content:space-between;color:#5f5f67;font-size:8px}.duration-control>small i{font-style:normal}
+  </style>
 </head>
 <body>
   <div class="backdrop" aria-hidden="true">KENDO AI</div>
@@ -31,8 +37,8 @@
         <span class="label-row"><b>การตั้งค่าผลลัพธ์</b></span>
         <div class="settings-grid">
           <label><span>สัดส่วนภาพ</span><select id="ratio"><option value="16:9">16:9</option><option value="9:16" selected>9:16</option><option value="1:1">1:1</option></select></label>
-          <label><span>ความยาว</span><select id="duration"><option value="5">5 วินาที</option><option value="10">10 วินาที</option></select></label>
-          <label><span>คุณภาพ</span><select id="quality"><option value="0.4">Draft · 0.4 MP</option><option value="0.7">Balanced · 0.7 MP</option><option value="1">High · 1.0 MP</option></select></label>
+          <label class="duration-control"><span class="control-heading"><span>ความยาว</span><b id="duration-value">5 วินาที</b></span><input id="duration" type="range" min="5" max="10" step="0.5" value="5" aria-label="ความยาววิดีโอ 5 ถึง 10 วินาที" /><small><i>5s</i><i>10s</i></small></label>
+          <label><span>ความละเอียด Output</span><select id="quality"><option value="0.4">Draft · 0.4 MP · 480 × 864</option><option value="0.7">Balanced · 0.7 MP · 640 × 1152</option><option value="0.9">0.9 MP · 736 × 1280</option><option value="1">1.0 MP · 768 × 1376</option><option value="1.2">1.2 MP · 832 × 1504</option><option value="2">2.0 MP · 1088 × 1920</option></select></label>
           <label><span>Generation Steps</span><input id="steps" type="number" min="1" max="50" value="10" /></label>
         </div>
       </section>
@@ -44,7 +50,7 @@
     <aside class="panel output">
       <header class="section-head"><div><h2>ผลลัพธ์</h2><small>OUTPUT PREVIEW</small></div><div class="output-actions"><span class="status" id="status"><i></i>IDLE</span><a id="download" class="download disabled">↓ ดาวน์โหลด</a></div></header>
       <div class="preview ratio-9-16" id="preview"><div class="grid"></div><div class="empty"><strong>K</strong><h3>พร้อมสำหรับการสร้าง</h3><p>ตัวอย่างวิดีโอและสถานะการประมวลผล<br>จะแสดงในพื้นที่นี้</p></div></div>
-      <div class="meta"><div><small>MODEL</small><b>MiniMax H3</b></div><div><small>RESOLUTION</small><b id="meta-resolution">0.4 MP</b></div><div><small>FORMAT</small><b id="meta-ratio">9:16</b></div><div><small>STEPS</small><b id="meta-steps">10</b></div></div>
+      <div class="meta"><div><small>MODEL</small><b>MiniMax H3</b></div><div><small>RESOLUTION OUTPUT</small><b id="meta-resolution">0.4 MP · 480 × 864</b></div><div><small>FORMAT</small><b id="meta-ratio">9:16</b></div><div><small>STEPS</small><b id="meta-steps">10</b></div></div>
       <div class="activity"><span><b>สถานะงาน</b><strong id="activity-state">ยังไม่มีงานในคิว</strong></span><div class="progress" id="progress"><i></i></div><p id="activity-text">เมื่อเริ่มสร้าง คุณสามารถติดตามขั้นตอนได้จากตรงนี้</p></div>
     </aside>
   </main>
