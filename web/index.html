@@ -24,8 +24,6 @@
   <main class="workspace" id="create">
     <section class="panel composer">
       <header class="section-head"><div><h1>สร้างวิดีโอใหม่</h1><small>NEW GENERATION</small></div><em>DRAFT</em></header>
-      <div class="mode"><strong>R2V</strong><div><b>Reference to Video</b><span>สร้างฉากเคลื่อนไหวจากภาพอ้างอิง 1–5 ภาพ</span></div><i>✓</i></div>
-
       <label class="field"><span class="label-row"><b>คำอธิบายการเคลื่อนไหว</b><small id="word-count">0 / 5,000 คำ</small></span><textarea id="prompt" placeholder="อธิบายฉาก การเคลื่อนกล้อง การเคลื่อนไหวของตัวละคร แสง และบรรยากาศ..."></textarea><small class="tip">ระบุการเคลื่อนกล้องและแสงให้ชัดเจน เพื่อให้ผลลัพธ์สม่ำเสมอ</small></label>
 
       <section class="field">
@@ -37,7 +35,7 @@
         <span class="label-row"><b>การตั้งค่าผลลัพธ์</b></span>
         <div class="settings-grid">
           <label><span>สัดส่วนภาพ</span><select id="ratio"><option value="16:9">16:9</option><option value="9:16" selected>9:16</option><option value="1:1">1:1</option></select></label>
-          <label class="duration-control"><span class="control-heading"><span>ความยาว</span><b id="duration-value">5 วินาที</b></span><input id="duration" type="range" min="5" max="10" step="0.5" value="5" aria-label="ความยาววิดีโอ 5 ถึง 10 วินาที" /><small><i>5s</i><i>10s</i></small></label>
+          <label class="duration-control"><span class="control-heading"><span>ความยาว</span><b id="duration-value">5 วินาที</b></span><input id="duration" type="range" min="5" max="20" step="0.5" value="5" aria-label="ความยาววิดีโอ 5 ถึง 20 วินาที" /><small><i>5s</i><i>20s</i></small></label>
           <label><span>ความละเอียด Output</span><select id="quality"><option value="0.4">Draft · 0.4 MP · 480 × 864</option><option value="0.7">Balanced · 0.7 MP · 640 × 1152</option><option value="0.9">0.9 MP · 736 × 1280</option><option value="1">1.0 MP · 768 × 1376</option><option value="1.2">1.2 MP · 832 × 1504</option><option value="2">2.0 MP · 1088 × 1920</option></select></label>
           <label><span>Generation Steps</span><input id="steps" type="number" min="1" max="50" value="10" /></label>
         </div>
