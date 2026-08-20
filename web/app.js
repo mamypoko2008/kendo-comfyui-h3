@@ -60,7 +60,7 @@ function buildWorkflow({ prompt, ratio, megapixels, duration, steps, images }) {
     "130":node("CreateVideo","Create Video",{fps:24,bit_depth:8,images:["122",0],audio:["121",0]}),
     "131":node("ComfyMathExpression","Math Expression",{expression:"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17","values.a":["132",0]}),
     "132":node("PrimitiveFloat","Float (Duration)",{value:duration}),
-    "136":node("MiniMaxH3ReferenceToVideo","MiniMax H3 Reference to Video",{prompt:["138",0],width:["115",0],height:["115",1],length:["131",1],ref_image_size:"match",clip:["128",0],vae:["119",0],audio_vae:["120",0],"ref_images.ref_image_0":["151",0]}),
+    "136":node("MiniMaxH3ReferenceToVideo","MiniMax H3 Reference to Video",{prompt:["138",0],width:["115",0],height:["115",1],length:["131",1],ref_image_size:"match",clip:["128",0],vae:["119",0],audio_vae:["120",0]}),
     "138":node("PrimitiveStringMultiline","Input Text (Prompt)",{value:prompt}),
     "141":node("ComfySwitchNode","If/Else Switch (model)",{switch:["146",0],on_false:["127",0],on_true:["145",0]}),
     "142":node("ComfySwitchNode","If/Else Switch (Steps)",{switch:["146",0],on_false:["143",0],on_true:["144",0]}),
@@ -69,9 +69,7 @@ function buildWorkflow({ prompt, ratio, megapixels, duration, steps, images }) {
     "145":node("LoraLoaderModelOnly","Load LoRA",{lora_name:"minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors",strength_model:1,model:["127",0]}),
     "146":node("PrimitiveBoolean","Boolean (Enable Lightning LoRA)",{value:false})
   };
-  const batch = { inputcount: images.length, "Update inputs": null };
-  images.forEach((name,index)=>{const id=imageNodeIds[index];w[id]=node("LoadImage","Load Image",{image:name});batch[`image_${index+1}`]=[id,0]});
-  w["151"] = node("ImageBatchMulti","Image Batch Multi",batch);
+  images.forEach((name,index)=>{const id=imageNodeIds[index];w[id]=node("LoadImage","Load Image",{image:name});w["136"].inputs[`ref_images.ref_image_${index}`]=[id,0]});
   return w;
 }
 
