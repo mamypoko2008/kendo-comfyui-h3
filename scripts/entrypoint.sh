@@ -48,9 +48,9 @@ if [[ "${KENDO_AUTO_DOWNLOAD_MODELS:-1}" == "1" ]]; then
   fi
 fi
 
-nohup python3.12 -m http.server 3000 --bind 0.0.0.0 --directory /opt/kendo-page \
+nohup python3.12 /opt/kendo/page_server.py \
   > /workspace/kendo-page.log 2>&1 &
-echo "[KENDO] Page started on port 3000"
+echo "[KENDO] Page and internal ComfyUI proxy started on port 3000"
 
 # Delegate SSH, FileBrowser, Jupyter, venv creation, upgrades, and the ComfyUI
 # foreground process to the tested RunPod entrypoint.

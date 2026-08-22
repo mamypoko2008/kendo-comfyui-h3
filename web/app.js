@@ -36,9 +36,7 @@ function updateResolutionLabels() {
 }
 
 function comfyBase() {
-  const origin = window.location.origin;
-  if (/^https:\/\/[a-z0-9]+-3000\.proxy\.runpod\.net$/i.test(origin)) return origin.replace(/-3000\.proxy\.runpod\.net$/i, "-8188.proxy.runpod.net");
-  return "http://127.0.0.1:8188";
+  return "/api/comfy";
 }
 
 function node(class_type, title, inputs) { return { inputs, class_type, _meta: { title } }; }

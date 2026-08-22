@@ -12,6 +12,7 @@ One-click RunPod image for MiniMax H3 on RTX 5090 and RTX PRO 6000 Blackwell.
 - SageAttention 2.2.0 compiled for Blackwell `sm_120a`
 - Background, resumable download of the five H3 model files
 - Official local MiniMax H3 text-to-video and image-to-video workflows
+- Same-origin Page proxy to ComfyUI, avoiding RunPod cross-domain authentication
 
 Models are stored under `/workspace/runpod-slim/ComfyUI/models` and are not
 baked into the container image. The first deployment starts ComfyUI immediately
@@ -52,7 +53,7 @@ credentials before it can pull the image.
 
 | Setting | Value |
 |---|---|
-| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.3` |
+| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.4` |
 | Container disk | 30 GB minimum |
 | Volume / network volume | 100 GB minimum, mounted at `/workspace` |
 | HTTP ports | `3000,8188,8888` (`Page`, `ComfyUI`, `JupyterLab`) |
