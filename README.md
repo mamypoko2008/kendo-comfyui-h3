@@ -10,7 +10,7 @@ One-click RunPod image for MiniMax H3 on RTX 5090 and RTX PRO 6000 Blackwell.
 - ComfyUI-VideoHelperSuite
 - ComfyUI-ALLinONE-MinimaxH3
 - SageAttention 2.2.0 compiled for Blackwell `sm_120a`
-- Background, resumable download of the five H3 model files
+- Parallel, multi-connection, resumable download of the five H3 model files
 - Official local MiniMax H3 text-to-video and image-to-video workflows
 - Same-origin Page proxy to ComfyUI, avoiding RunPod cross-domain authentication
 
@@ -22,8 +22,9 @@ while downloading models in the background. Follow progress with:
 tail -f /workspace/kendo-model-download.log
 ```
 
-The marker `/workspace/.kendo-h3-models-ready` is created when all downloads
-pass minimum-size validation.
+The Page starts immediately and shows model-download progress. Generation stays
+disabled until both the five model files and ComfyUI are ready. The marker
+`/workspace/.kendo-h3-models-ready` is created after exact-size validation.
 
 ## Build and push
 
@@ -53,7 +54,7 @@ credentials before it can pull the image.
 
 | Setting | Value |
 |---|---|
-| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.4` |
+| Container image | `ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5` |
 | Container disk | 30 GB minimum |
 | Volume / network volume | 100 GB minimum, mounted at `/workspace` |
 | HTTP ports | `3000,8188,8888` (`Page`, `ComfyUI`, `JupyterLab`) |
@@ -61,7 +62,7 @@ credentials before it can pull the image.
 | Docker command | Leave empty |
 | Sage | `KENDO_ENABLE_SAGE=1` |
 | Model download | `KENDO_AUTO_DOWNLOAD_MODELS=1` |
-| Wait for models | `KENDO_WAIT_FOR_MODELS=1` |
+| Wait for models | `KENDO_WAIT_FOR_MODELS=0` |
 
 Use RTX 5090 or RTX PRO 6000 Blackwell. Both expose compute capability 12.0,
 which matches the baked SageAttention kernel.
@@ -95,6 +96,8 @@ Run one short H3 generation before publishing the deploy link.
   volume.
 - Model downloads use `.part` files and atomic rename. Undersized existing files
   are preserved with an `.incomplete.<timestamp>` suffix rather than deleted.
-- With `KENDO_WAIT_FOR_MODELS=1` (the default), RunPod services remain in
-  `Initializing` until all five model files pass their minimum-size checks.
-  Set it to `0` only when background downloading is explicitly preferred.
+- `KENDO_WAIT_FOR_MODELS=0` is the course default. Page, ComfyUI, and management
+  services start immediately while models download in the background. Page
+  enables generation automatically when the system is ready.
+- Set `KENDO_WAIT_FOR_MODELS=1` only for diagnostics that intentionally keep all
+  RunPod services in `Initializing` until every model passes validation.

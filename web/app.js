@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 const refs = [null];
 const imageNodeIds = ["153", "156", "158", "159", "160"];
 let submitting = false;
+let systemReady = false;
 const activeJobs = new Map();
 
 const resolutionOutputs = {
@@ -85,6 +86,21 @@ function renderRefs() {
 }
 
 function setStatus(type,text,message){const status=$("#status");status.className=`status ${type}`;status.innerHTML=`<i></i>${text}`;$("#activity-state").textContent=message;$("#progress").classList.toggle("active",type==="running");}
+function updateGenerateAvailability(){$("#generate").disabled=submitting||!systemReady}
+async function refreshSystemStatus(){
+  try{
+    const response=await fetch("/api/kendo/status",{cache:"no-store"});
+    if(!response.ok)throw new Error("status unavailable");
+    const state=await response.json();
+    systemReady=Boolean(state.models_ready&&state.comfy_ready);
+    updateGenerateAvailability();
+    if(activeJobs.size||submitting)return;
+    if(state.download_error){setStatus("error","DOWNLOAD ERROR","ดาวน์โหลดโมเดลไม่สำเร็จ");$("#notice").textContent="การดาวน์โหลดสะดุด กรุณา Restart Pod เพื่อดาวน์โหลดต่อ";return}
+    if(!state.models_ready){const progress=Number(state.progress||0).toFixed(1);setStatus("running","PREPARING",`กำลังเตรียมโมเดล ${progress}%`);$("#notice").textContent=`หน้าเว็บพร้อมแล้ว · กำลังดาวน์โหลดโมเดล ${progress}% · ปุ่มสร้างจะเปิดอัตโนมัติเมื่อพร้อม`;return}
+    if(!state.comfy_ready){setStatus("running","STARTING","กำลังเปิด ComfyUI");$("#notice").textContent="โมเดลพร้อมแล้ว · กำลังเริ่มระบบประมวลผล";return}
+    setStatus("done","READY","พร้อมสร้างวิดีโอ");$("#notice").textContent="ระบบและโมเดลพร้อมใช้งานแล้ว";
+  }catch(_error){systemReady=false;updateGenerateAvailability();if(!activeJobs.size&&!submitting){setStatus("error","OFFLINE","กำลังเชื่อมต่อระบบ");$("#notice").textContent="หน้าเว็บเปิดแล้ว แต่ระบบภายในยังไม่พร้อม"}}
+}
 function findVideo(value){if(!value||typeof value!=="object")return null;if(Array.isArray(value)){for(const item of value){const found=findVideo(item);if(found)return found}return null}if(typeof value.filename==="string"&&/\.(mp4|webm|mov|mkv|gif)$/i.test(value.filename))return value;for(const item of Object.values(value)){const found=findVideo(item);if(found)return found}return null}
 function viewUrl(file){const q=new URLSearchParams({filename:file.filename,subfolder:file.subfolder||"",type:file.type||"output"});return `${comfyBase()}/view?${q}`}
 function saveHistory(item){const items=JSON.parse(localStorage.getItem("kendo-ai-pod-history")||"[]");const next=[item,...items.filter(x=>x.id!==item.id)].slice(0,20);localStorage.setItem("kendo-ai-pod-history",JSON.stringify(next));renderHistory()}
@@ -94,11 +110,11 @@ function showVideo(url){const preview=$("#preview");preview.querySelector("video
 
 function updateQueueStatus(){const count=activeJobs.size;if(count){setStatus("running","RUNNING",`${count} งานกำลังรอหรือประมวลผล`);$("#notice").textContent=`ส่งเข้าคิวแล้ว ${count} งาน · สามารถตั้งค่างานถัดไปและกดสร้างต่อได้เลย`}else{setStatus("done","DONE","งานในคิวเสร็จทั้งหมดแล้ว");$("#notice").textContent="งานในคิวเสร็จทั้งหมดแล้ว"}}
 async function monitorJob(id,meta){try{await waitForJob(id,meta);activeJobs.delete(id);updateQueueStatus()}catch(error){activeJobs.delete(id);if(activeJobs.size)updateQueueStatus();else setStatus("error","ERROR","งานล่าสุดประมวลผลไม่สำเร็จ");$("#notice").textContent=error.message||"ComfyUI ประมวลผลไม่สำเร็จ"}}
-async function generate(){if(submitting)return;const files=refs.filter(Boolean).map(x=>x.file);const prompt=$("#prompt").value.trim();if(!files.length)return $("#notice").textContent="กรุณาแนบภาพอ้างอิงอย่างน้อย 1 ภาพ";if(!prompt)return $("#notice").textContent="กรุณากรอกคำอธิบายการเคลื่อนไหว";submitting=true;$("#generate").disabled=true;$("#generate span").textContent="กำลังส่งเข้าคิว...";setStatus("running","UPLOADING","กำลังอัปโหลดภาพ");try{const names=[];for(let i=0;i<files.length;i++){const form=new FormData();form.append("image",files[i],`${Date.now()}-${i+1}-${files[i].name.replace(/[^a-zA-Z0-9._-]/g,"_")}`);form.append("subfolder","kendo-ai");form.append("type","input");form.append("overwrite","true");const response=await fetch(`${comfyBase()}/upload/image`,{method:"POST",body:form});if(!response.ok)throw new Error("อัปโหลดภาพไม่สำเร็จ");const result=await response.json();names.push(result.subfolder?`${result.subfolder}/${result.name}`:result.name)}const ratio=$("#ratio").value;const workflow=buildWorkflow({prompt,ratio,megapixels:Number($("#quality").value),duration:Number($("#duration").value),steps:Number($("#steps").value),images:names});const response=await fetch(`${comfyBase()}/prompt`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});const result=await response.json();if(!response.ok||!result.prompt_id)throw new Error(result.error?.message||"ส่ง Workflow ไม่สำเร็จ");activeJobs.set(result.prompt_id,{prompt,ratio});updateQueueStatus();void monitorJob(result.prompt_id,{prompt,ratio})}catch(error){if(activeJobs.size)updateQueueStatus();else setStatus("error","ERROR","ส่งงานเข้าคิวไม่สำเร็จ");$("#notice").textContent=error.message||"เชื่อมต่อ ComfyUI ไม่สำเร็จ"}finally{submitting=false;$("#generate").disabled=false;$("#generate span").textContent="สร้างวิดีโอ"}}
+async function generate(){if(submitting||!systemReady)return;const files=refs.filter(Boolean).map(x=>x.file);const prompt=$("#prompt").value.trim();if(!files.length)return $("#notice").textContent="กรุณาแนบภาพอ้างอิงอย่างน้อย 1 ภาพ";if(!prompt)return $("#notice").textContent="กรุณากรอกคำอธิบายการเคลื่อนไหว";submitting=true;updateGenerateAvailability();$("#generate span").textContent="กำลังส่งเข้าคิว...";setStatus("running","UPLOADING","กำลังอัปโหลดภาพ");try{const names=[];for(let i=0;i<files.length;i++){const form=new FormData();form.append("image",files[i],`${Date.now()}-${i+1}-${files[i].name.replace(/[^a-zA-Z0-9._-]/g,"_")}`);form.append("subfolder","kendo-ai");form.append("type","input");form.append("overwrite","true");const response=await fetch(`${comfyBase()}/upload/image`,{method:"POST",body:form});if(!response.ok)throw new Error("อัปโหลดภาพไม่สำเร็จ");const result=await response.json();names.push(result.subfolder?`${result.subfolder}/${result.name}`:result.name)}const ratio=$("#ratio").value;const workflow=buildWorkflow({prompt,ratio,megapixels:Number($("#quality").value),duration:Number($("#duration").value),steps:Number($("#steps").value),images:names});const response=await fetch(`${comfyBase()}/prompt`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});const result=await response.json();if(!response.ok||!result.prompt_id)throw new Error(result.error?.message||"ส่ง Workflow ไม่สำเร็จ");activeJobs.set(result.prompt_id,{prompt,ratio});updateQueueStatus();void monitorJob(result.prompt_id,{prompt,ratio})}catch(error){if(activeJobs.size)updateQueueStatus();else setStatus("error","ERROR","ส่งงานเข้าคิวไม่สำเร็จ");$("#notice").textContent=error.message||"เชื่อมต่อ ComfyUI ไม่สำเร็จ"}finally{submitting=false;updateGenerateAvailability();$("#generate span").textContent="สร้างวิดีโอ"}}
 
 $("#prompt").addEventListener("input",event=>{const words=Array.from(new Intl.Segmenter("th",{granularity:"word"}).segment(event.target.value)).filter(x=>x.isWordLike).length;$("#word-count").textContent=`${words.toLocaleString("th-TH")} / 5,000 คำ`;if(words>5000)event.target.value=event.target.value.slice(0,-1)});
 $("#ratio").addEventListener("change",event=>{$("#preview").className=`preview ratio-${event.target.value.replace(":","-")}`;$("#meta-ratio").textContent=event.target.value;updateResolutionLabels()});
 $("#quality").addEventListener("change",updateResolutionLabels);
 $("#duration").addEventListener("input",event=>$("#duration-value").textContent=`${Number(event.target.value).toLocaleString("th-TH",{maximumFractionDigits:1})} วินาที`);
 $("#steps").addEventListener("input",event=>{$("#meta-steps").textContent=Math.min(50,Math.max(1,Number(event.target.value)||1))});
-$("#generate").addEventListener("click",generate);updateResolutionLabels();renderRefs();renderHistory();
+$("#generate").addEventListener("click",generate);updateResolutionLabels();renderRefs();renderHistory();updateGenerateAvailability();void refreshSystemStatus();setInterval(refreshSystemStatus,5000);

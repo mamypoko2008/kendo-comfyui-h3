@@ -44,6 +44,9 @@ class PageProxyTest(unittest.TestCase):
 
         cls.comfy = ThreadingHTTPServer(("127.0.0.1", 0), MockComfyHandler)
         page_server.PAGE_ROOT = cls.tempdir.name
+        page_server.MODEL_ROOT = str(Path(cls.tempdir.name, "models"))
+        page_server.READY_FILE = str(Path(cls.tempdir.name, "models-ready"))
+        page_server.ERROR_FILE = str(Path(cls.tempdir.name, "models-error"))
         page_server.COMFY_HOST = "127.0.0.1"
         page_server.COMFY_PORT = cls.comfy.server_port
         cls.page = ThreadingHTTPServer(("127.0.0.1", 0), page_server.KendoPageHandler)
@@ -92,6 +95,16 @@ class PageProxyTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(dict(headers)["Content-Type"], "application/json")
         self.assertEqual(body, payload)
+
+    def test_kendo_status_reports_model_and_comfy_readiness(self):
+        Path(page_server.READY_FILE).write_text("ready", encoding="utf-8")
+        status, headers, body = self.request("GET", "/api/kendo/status")
+        payload = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(dict(headers)["Cache-Control"], "no-store")
+        self.assertTrue(payload["models_ready"])
+        self.assertTrue(payload["comfy_ready"])
+        self.assertEqual(payload["total_bytes"], 43_090_871_063)
 
 
 if __name__ == "__main__":

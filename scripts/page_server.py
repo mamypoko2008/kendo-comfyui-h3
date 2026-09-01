@@ -16,6 +16,23 @@ LISTEN_PORT = int(os.environ.get("KENDO_PAGE_PORT", "3000"))
 COMFY_HOST = os.environ.get("KENDO_COMFY_HOST", "127.0.0.1")
 COMFY_PORT = int(os.environ.get("KENDO_COMFY_PORT", "8188"))
 PROXY_PREFIX = "/api/comfy"
+STATUS_PATH = "/api/kendo/status"
+MODEL_ROOT = os.environ.get(
+    "KENDO_MODEL_ROOT", "/workspace/runpod-slim/ComfyUI/models"
+)
+READY_FILE = os.environ.get(
+    "KENDO_READY_FILE", "/workspace/.kendo-h3-models-ready"
+)
+ERROR_FILE = os.environ.get(
+    "KENDO_ERROR_FILE", "/workspace/.kendo-h3-models-error"
+)
+MODEL_SPECS = (
+    ("diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", 20_970_379_616),
+    ("text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", 15_687_142_551),
+    ("vae/minimax_h3_video_vae_fp16.safetensors", 5_207_808_496),
+    ("vae/minimax_h3_audio_vae_fp32.safetensors", 605_254_808),
+    ("loras/minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors", 620_285_592),
+)
 
 HOP_BY_HOP_HEADERS = {
     "connection",
@@ -36,12 +53,18 @@ class KendoPageHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=PAGE_ROOT, **kwargs)
 
     def do_GET(self) -> None:
+        if urlsplit(self.path).path == STATUS_PATH:
+            self._send_kendo_status()
+            return
         if self._is_comfy_request():
             self._proxy_to_comfy()
             return
         super().do_GET()
 
     def do_HEAD(self) -> None:
+        if urlsplit(self.path).path == STATUS_PATH:
+            self._send_kendo_status(include_body=False)
+            return
         if self._is_comfy_request():
             self._proxy_to_comfy(include_body=False)
             return
@@ -56,6 +79,52 @@ class KendoPageHandler(SimpleHTTPRequestHandler):
     def _is_comfy_request(self) -> bool:
         path = urlsplit(self.path).path
         return path == PROXY_PREFIX or path.startswith(f"{PROXY_PREFIX}/")
+
+    def _comfy_ready(self) -> bool:
+        connection = http.client.HTTPConnection(COMFY_HOST, COMFY_PORT, timeout=2)
+        try:
+            connection.request("GET", "/system_stats", headers={"Connection": "close"})
+            return connection.getresponse().status == 200
+        except (ConnectionError, TimeoutError, OSError, http.client.HTTPException):
+            return False
+        finally:
+            connection.close()
+
+    def _send_kendo_status(self, include_body: bool = True) -> None:
+        downloaded_bytes = 0
+        total_bytes = sum(expected for _relative, expected in MODEL_SPECS)
+        for relative, expected in MODEL_SPECS:
+            destination = os.path.join(MODEL_ROOT, relative)
+            candidate = destination if os.path.isfile(destination) else f"{destination}.part"
+            try:
+                downloaded_bytes += min(os.path.getsize(candidate), expected)
+            except OSError:
+                pass
+
+        error_message = None
+        try:
+            with open(ERROR_FILE, encoding="utf-8") as error_file:
+                error_message = error_file.read().strip() or "Model download failed"
+        except OSError:
+            pass
+
+        payload = json.dumps(
+            {
+                "models_ready": os.path.isfile(READY_FILE),
+                "comfy_ready": self._comfy_ready(),
+                "download_error": error_message,
+                "downloaded_bytes": downloaded_bytes,
+                "total_bytes": total_bytes,
+                "progress": round(downloaded_bytes * 100 / total_bytes, 1),
+            }
+        ).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        if include_body:
+            self.wfile.write(payload)
 
     def _upstream_path(self) -> str:
         parsed = urlsplit(self.path)
