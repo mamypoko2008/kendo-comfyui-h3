@@ -1,0 +1,43 @@
+const { chromium } = require('playwright');
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+(async()=>{
+ const server=http.createServer((req,res)=>{const name=req.url==='/'?'v2.html':req.url.slice(1);if(!['v2.html','v2.js','v2.css','workflow.js'].includes(name)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(__dirname,'../web',name)))});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ let browser;
+ try{
+  browser=await chromium.launch({channel:'msedge',headless:true});
+  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  let ready=false,submitted,uploads=0;
+  await page.route('**/api/kendo/status',r=>r.fulfill({json:{models_ready:ready,comfy_ready:true,progress:ready?100:42}}));
+  await page.route('**/api/comfy/upload/image',r=>{uploads++;return r.fulfill({json:{name:'uploaded-'+uploads+'.mp4',subfolder:''}})});
+  await page.route('**/api/comfy/prompt',r=>{submitted=r.request().postDataJSON();return r.fulfill({json:{prompt_id:'test'}})});
+  await page.route('**/api/comfy/history/*',r=>r.fulfill({json:{}}));
+  await page.goto('http://127.0.0.1:'+server.address().port);
+  await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('42'));
+  assert.ok(await page.locator('#generate').isDisabled());
+  await page.screenshot({path:path.join(__dirname,'../ui-v2-light.png'),fullPage:true});
+  await page.locator('#theme').click();assert.equal(await page.locator('html').getAttribute('class'),'dark');
+  await page.screenshot({path:path.join(__dirname,'../ui-v2-dark.png'),fullPage:true});
+  await page.reload();assert.equal(await page.locator('html').getAttribute('class'),'dark');
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0WQAAAAASUVORK5CYII=','base64');
+  await page.locator('#image-input').setInputFiles(Array.from({length:10},(_,i)=>({name:i+'.png',mimeType:'image/png',buffer:png})));
+  assert.equal(await page.locator('#image-count').textContent(),'9 / 9');
+  await page.locator('#video-input').setInputFiles({name:'ref.mp4',mimeType:'video/mp4',buffer:Buffer.from('mock')});
+  await page.locator('#video-enabled').uncheck();
+  await page.locator('#audio-enabled').check();
+  await page.locator('#audio-input').setInputFiles(Array.from({length:4},(_,i)=>({name:i+'.wav',mimeType:'audio/wav',buffer:Buffer.from('mock')})));
+  assert.equal(await page.locator('#audio-count').textContent(),'3 / 3');
+  await page.locator('#prompt').fill('Use <Picture 1> and <Audio 1>');ready=true;
+  await page.waitForFunction(()=>!document.querySelector('#generate').disabled);
+  await page.locator('#generate').click();await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('ส่งเข้าคิวแล้ว'));
+  assert.equal(uploads,12);assert.ok(!submitted.prompt.refVideo0);assert.ok(submitted.prompt.audio2);assert.ok(submitted.prompt.image8);
+  await page.locator('#video-enabled').check();assert.equal(await page.locator('#video-count').textContent(),'1 / 1');
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+  assert.deepEqual(errors,[]);console.log('UI passed: readiness gate, light/dark persistence, limits 9/1/3, disabled video omission, retained file, mobile width');
+ }finally{if(browser)await browser.close();server.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});

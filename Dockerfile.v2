@@ -1,0 +1,15 @@
+# Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
+ENV KENDO_IMAGE_VERSION=2.0.0 \
+    KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_AUTO_DOWNLOAD_MODELS=1 \
+    KENDO_ENABLE_SAGE=1
+COPY scripts/models_v2.py scripts/download_models_v2.py /opt/kendo/
+COPY scripts/download-v2.sh /opt/kendo/download-models.sh
+COPY scripts/page_server.py /opt/kendo/page_server_base.py
+COPY scripts/page_server_v2.py /opt/kendo/page_server.py
+COPY web/v2.html /opt/kendo-page/index.html
+COPY web/v2.css web/v2.js web/workflow.js /opt/kendo-page/
+COPY scripts/entrypoint-v2.sh /opt/kendo/entrypoint-v2.sh
+RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v2.sh
+ENTRYPOINT ["/opt/kendo/entrypoint-v2.sh"]
