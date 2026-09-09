@@ -1,6 +1,7 @@
 const $ = (selector) => document.querySelector(selector);
 const refs = [null];
-const imageNodeIds = ["153", "156", "158", "159", "160"];
+const MAX_IMAGE_REFS = 9;
+const imageNodeIds = ["153", "156", "158", "159", "160", "161", "162", "163", "164"];
 let submitting = false;
 let systemReady = false;
 const activeJobs = new Map();
@@ -42,6 +43,7 @@ function comfyBase() {
 
 function node(class_type, title, inputs) { return { inputs, class_type, _meta: { title } }; }
 function buildWorkflow({ prompt, ratio, megapixels, duration, steps, images }) {
+  if (images.length > MAX_IMAGE_REFS) throw new Error(`รองรับภาพอ้างอิงสูงสุด ${MAX_IMAGE_REFS} ภาพ`);
   const aspect = { "16:9": "16:9 (Widescreen)", "9:16": "9:16 (Portrait Widescreen)", "1:1": "1:1 (Square)" }[ratio];
   const w = {
     "92":node("SaveVideo","Save Video",{filename_prefix:"video/Kendo_Ai_H3",format:"auto",codec:"auto",video:["130",0]}),
@@ -81,8 +83,8 @@ function renderRefs() {
     card.querySelector("input").addEventListener("change",event=>{const file=event.target.files[0];if(!file)return;if(refs[index])URL.revokeObjectURL(refs[index].preview);refs[index]={file,preview:URL.createObjectURL(file)};renderRefs()});
     card.querySelector(".remove")?.addEventListener("click",event=>{event.preventDefault();URL.revokeObjectURL(refs[index].preview);refs.splice(index,1);if(!refs.length)refs.push(null);renderRefs()});grid.append(card)
   });
-  if(refs.length<5){const add=document.createElement("button");add.className="add-upload";add.type="button";add.innerHTML="<strong>＋</strong><b>เพิ่มภาพอ้างอิง</b><small>สูงสุด 5 ภาพ</small>";add.onclick=()=>{refs.push(null);renderRefs()};grid.append(add)}
-  $("#file-count").textContent=`${refs.filter(Boolean).length} / 5 FILES`;
+  if(refs.length<MAX_IMAGE_REFS){const add=document.createElement("button");add.className="add-upload";add.type="button";add.innerHTML=`<strong>＋</strong><b>เพิ่มภาพอ้างอิง</b><small>สูงสุด ${MAX_IMAGE_REFS} ภาพ</small>`;add.onclick=()=>{refs.push(null);renderRefs()};grid.append(add)}
+  $("#file-count").textContent=`${refs.filter(Boolean).length} / ${MAX_IMAGE_REFS} FILES`;
 }
 
 function setStatus(type,text,message){const status=$("#status");status.className=`status ${type}`;status.innerHTML=`<i></i>${text}`;$("#activity-state").textContent=message;$("#progress").classList.toggle("active",type==="running");}
