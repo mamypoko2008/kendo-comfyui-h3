@@ -35,6 +35,8 @@ for(const kind of Object.keys(media)){
 }
 for(const kind of ['video','audio'])$('#'+kind+'-enabled').onchange=()=>{$('#'+kind+'-body').hidden=!$('#'+kind+'-enabled').checked;renderTags()};
 $('#video-audio').onchange=renderTags;
+function updateDuration(){const seconds=Number($('#duration').value);$('#duration-value').textContent=`${seconds} วินาที`;$('#duration').setAttribute('aria-valuetext',`${seconds} วินาที`)}
+$('#duration').oninput=updateDuration;updateDuration();
 function setTheme(dark){document.documentElement.classList.toggle('dark',dark);$('#theme').textContent=dark?'โหมดสว่าง':'โหมดมืด';$('#theme').setAttribute('aria-pressed',String(dark));try{localStorage.setItem('kendo-theme',dark?'dark':'light')}catch{}}
 let savedTheme='light';try{savedTheme=localStorage.getItem('kendo-theme')}catch{}setTheme(savedTheme==='dark');
 $('#theme').onclick=()=>setTheme(!document.documentElement.classList.contains('dark'));

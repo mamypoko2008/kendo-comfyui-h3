@@ -1,6 +1,6 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v2",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.0.0",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.0",
   "category": "NVIDIA",
   "containerDiskInGb": 30,
   "dockerEntrypoint": [],
@@ -21,5 +21,5 @@
     "KENDO_AUTO_DOWNLOAD_MODELS": "1",
     "KENDO_WAIT_FOR_MODELS": "0"
   },
-  "readme": "Kendo MiniMax H3 Ref2VA studio v2. Supports up to 9 image references, 1 video reference, and 3 audio references. Models download in parallel with resume support to /workspace on first launch. Open port 3000 for the streamlined Crimson UI or port 8188 for ComfyUI."
+  "readme": "Kendo MiniMax H3 Ref2VA Turbo studio v2. Supports up to 9 image references, 1 video reference, and 3 audio references. Models and the matching Ref2VA Turbo LoRA download in parallel with resume support to /workspace on first launch. Open port 3000 for the streamlined Crimson UI or port 8188 for ComfyUI."
 }

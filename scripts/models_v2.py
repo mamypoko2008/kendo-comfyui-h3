@@ -10,6 +10,7 @@ MODEL_SPECS = (
     ('text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors', 15687142551),
     ('vae/minimax_h3_video_vae_fp16.safetensors', 5207808496),
     ('vae/minimax_h3_audio_vae_fp32.safetensors', 605254808),
+    ('loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors', 1956193000),
 )
 
 def files_ready():

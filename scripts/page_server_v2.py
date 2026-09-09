@@ -23,7 +23,7 @@ class V2Handler(base.KendoPageHandler):
             error = None
         payload = json.dumps(dict(models_ready=models.files_ready(), comfy_ready=self._comfy_ready(),
             download_error=error, downloaded_bytes=downloaded, total_bytes=total,
-            progress=round(downloaded * 100 / total, 1), version='2.0.0')).encode()
+            progress=round(downloaded * 100 / total, 1), version='2.1.0')).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')

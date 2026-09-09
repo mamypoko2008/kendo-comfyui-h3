@@ -3,8 +3,8 @@
   function buildWorkflow({prompt, ratio, megapixels, duration, steps, images = [], videos = [], audios = [], videoAudio = false}) {
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
-    if (!(duration >= 5 && duration <= 15) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
-    const sizes = {'0.4':[864,480], '0.7':[1152,640], '1':[1376,768]};
+    if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
+    const sizes = {'0.4':[864,480], '0.7':[1152,640], '1':[1376,768], '1.2':[1504,832], '1.5':[1632,928], '2':[1920,1088]};
     if (!sizes[String(megapixels)] || !['16:9','9:16','1:1'].includes(ratio)) throw new Error('Invalid resolution');
     let [width,height] = sizes[String(megapixels)];
     if (ratio === '9:16') [width,height] = [height,width];
@@ -13,14 +13,15 @@
     const n = (class_type, inputs) => ({class_type, inputs});
     const w = {
       model:n('UNETLoader',{unet_name:'minimax_h3_ref2va_pruned_int8_convrot.safetensors',weight_dtype:'default'}),
+      turbo:n('LoraLoaderModelOnly',{lora_name:'minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors',strength_model:1,model:['model',0]}),
       clip:n('CLIPLoader',{clip_name:'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors',type:'minimax',device:'default'}),
       vae:n('VAELoader',{vae_name:'minimax_h3_video_vae_fp16.safetensors'}),
       audioVae:n('VAELoader',{vae_name:'minimax_h3_audio_vae_fp32.safetensors'}),
       reference:n('MiniMaxH3ReferenceToVideo',{prompt,width,height,length:frames,ref_image_size:'match',clip:['clip',0],vae:['vae',0],audio_vae:['audioVae',0]}),
       noise:n('RandomNoise',{noise_seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER)}),
-      guider:n('BasicGuider',{model:['model',0],conditioning:['reference',0]}),
-      sampler:n('KSamplerSelect',{sampler_name:'res_multistep'}),
-      schedule:n('BasicScheduler',{scheduler:'simple',steps,denoise:1,model:['model',0]}),
+      guider:n('BasicGuider',{model:['turbo',0],conditioning:['reference',0]}),
+      sampler:n('KSamplerSelect',{sampler_name:'euler'}),
+      schedule:n('BasicScheduler',{scheduler:'simple',steps,denoise:1,model:['turbo',0]}),
       sample:n('SamplerCustomAdvanced',{noise:['noise',0],guider:['guider',0],sampler:['sampler',0],sigmas:['schedule',0],latent_image:['reference',1]}),
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),

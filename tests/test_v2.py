@@ -37,7 +37,7 @@ class V2ReadinessTest(unittest.TestCase):
                 result = json.loads(conn.getresponse().read())
                 conn.close()
                 self.assertTrue(result['models_ready'])
-                self.assertEqual(result['version'], '2.0.0')
+                self.assertEqual(result['version'], '2.1.0')
                 self.assertEqual(result['progress'], 100)
                 self.assertEqual(result['total_bytes'], 5)
             finally:
