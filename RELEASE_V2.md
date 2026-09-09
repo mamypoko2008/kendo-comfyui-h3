@@ -18,12 +18,15 @@ Separate release: keep existing RunPod templates and v1 image tags unchanged.
 - Media uploads max 512 MB each in UI. Video uses first output-duration seconds at 24 fps.
 - Reference prompt tags are generated in model order, including video soundtracks.
 
-The initial v2.0.0 build completed successfully from commit `ba3488e`. The v2.1.0
-release adds the matching Ref2VA Turbo LoRA and the updated controls.
+The v2.1.0 build completed successfully from commit `45a1dad`.
+
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34356546640
+- Image digest: `sha256:426f5669d2bc6e1b50137e28649ac1dcc84c1614e25f15c9bd92182d4622b1df`
 
 - RunPod template: `Kendo-ComfyUI-H3 Fast v2`
 - Template ID: `1ncfofsbzx`
 - Visibility: Public
+- Port labels: 3000 `Page`, 8188 `Comfy`, 8888 `JupyterLab`
 - Existing templates `g6zjcd5aew` and `mcji280319` remain unchanged.
 
 Create a fresh Pod from the v2 template for live GPU verification.
