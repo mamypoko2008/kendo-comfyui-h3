@@ -1,0 +1,19 @@
+# Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.1 \
+    KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_AUTO_DOWNLOAD_MODELS=1 \
+    KENDO_ENABLE_SAGE=1
+RUN git clone https://github.com/1038lab/ComfyUI-FlashVSR.git /opt/kendo/custom_nodes/ComfyUI-FlashVSR \
+    && cd /opt/kendo/custom_nodes/ComfyUI-FlashVSR \
+    && git checkout 98f2769d74e74835df307b93e6b38268e173594f \
+    && /workspace/runpod-slim/ComfyUI/.venv-cu128/bin/pip install --no-cache-dir -r requirements.txt
+COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
+COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh
+COPY scripts/page_server.py /opt/kendo/page_server_base.py
+COPY scripts/page_server_v3_beta.py /opt/kendo/page_server.py
+COPY web/v3-beta.html /opt/kendo-page/index.html
+COPY web/v3-beta.css web/v3-beta.js web/workflow-v3-beta.js /opt/kendo-page/
+COPY scripts/entrypoint-v3-beta.sh /opt/kendo/entrypoint-v3-beta.sh
+RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v3-beta.sh
+ENTRYPOINT ["/opt/kendo/entrypoint-v3-beta.sh"]

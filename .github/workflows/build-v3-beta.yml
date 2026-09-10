@@ -1,0 +1,35 @@
+name: Build KENDO H3 Fast v3 beta
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v3.*-beta.*'
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/workflow.test.cjs tests/workflow-v3-beta.test.cjs
+      - run: python -m unittest discover -s tests -v
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.v3-beta
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:${{ github.ref_name }}
+          cache-from: type=gha,scope=v3-beta
+          cache-to: type=gha,scope=v3-beta,mode=max

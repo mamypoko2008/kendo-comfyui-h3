@@ -1,0 +1,26 @@
+{
+  "name": "Kendo-ComfyUI-H3 Fast v3 beta",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.1",
+  "category": "NVIDIA",
+  "containerDiskInGb": 30,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 100,
+  "volumeMountPath": "/workspace",
+  "ports": [
+    "3000/http",
+    "8188/http",
+    "8888/http",
+    "22/tcp",
+    "22/udp"
+  ],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "1",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MODEL_DOWNLOAD_WORKERS": "4"
+  },
+  "readme": "Kendo MiniMax H3 Ref2VA Turbo studio v3 beta. Adds optional FlashVSR temporal video upscaling after native 1 MP generation, with 2x or 4x output and Fast, Balanced, Long Video, or High Quality modes. Supports 9 image references, 1 video reference, and 3 audio references. Existing v2 remains unchanged."
+}
