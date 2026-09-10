@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.1`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.2`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable

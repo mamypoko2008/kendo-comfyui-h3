@@ -48,7 +48,7 @@ class V3BetaReadinessTest(unittest.TestCase):
                 self.assertTrue(result['base_models_ready'])
                 self.assertFalse(result['upscale_models_ready'])
                 self.assertFalse(result['models_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.1')
+                self.assertEqual(result['version'], '3.0.0-beta.2')
             finally:
                 server.shutdown()
                 server.server_close()
