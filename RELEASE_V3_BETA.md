@@ -31,10 +31,10 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 
 ## Published beta
 
-- Repository commit: `6fbf4c3`
-- Release tag: `v3.0.0-beta.3`
-- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34428082137
-- Image digest: `sha256:473dc0be0440fb8003efa93b54e45c0c69b0a51e092f1108aa352d70d7b76ee2`
+- Repository commit: `14c0946`
+- Release tag: `v3.0.0-beta.4`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34431599303
+- Image digest: `sha256:9142d0181c690c4bda7f9a1ea1b8ef91c9a6bc3f9a07a0f2713eb87edaa1824a`
 - RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
 - RunPod template ID: `ok09ni9573`
 - Visibility: Public
@@ -42,3 +42,5 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 ## beta.4 startup fix
 
 The v3 wrapper now verifies that `ComfyUI/main.py` exists and restores the baked ComfyUI tree before linking the FlashVSR custom node. This repairs incomplete persistent volumes created by beta.3 while preserving downloaded models and user files.
+
+The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created from an earlier image must be redeployed to run beta.4.
