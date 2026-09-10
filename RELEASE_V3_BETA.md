@@ -31,10 +31,10 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 
 ## Published beta
 
-- Repository commit: `14c0946`
-- Release tag: `v3.0.0-beta.4`
-- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34431599303
-- Image digest: `sha256:9142d0181c690c4bda7f9a1ea1b8ef91c9a6bc3f9a07a0f2713eb87edaa1824a`
+- Repository commit: `492d1f1`
+- Release tag: `v3.0.0-beta.5`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34459711423
+- Image digest: `sha256:4f71e5cfccbcca95f4edf38d829e4ca16ba3b5e9727d1696dd47d3f29f226f0f`
 - RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
 - RunPod template ID: `ok09ni9573`
 - Visibility: Public
@@ -54,4 +54,4 @@ The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created 
 - Fast mode uses `RealESRGAN_x2plus.pth` for frame-based 2x upscaling.
 - Quality mode uses SeedVR2 3B FP8 with 1080p and 1440p targets, tiled VAE processing, CPU offload, and source-audio passthrough.
 - H3, Fast Upscale, and Quality Upscale readiness are independent. H3 generation and the 67 MB Fast model do not wait for the 3.89 GB SeedVR2 download.
-- beta.4 remains the currently published template image until the beta.5 container build is verified.
+- The public v3 RunPod template now points to beta.5. Live GPU quality and performance still require verification before promotion to stable.
