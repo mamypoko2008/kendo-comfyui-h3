@@ -48,10 +48,17 @@ class V3BetaReadinessTest(unittest.TestCase):
                 self.assertTrue(result['base_models_ready'])
                 self.assertFalse(result['upscale_models_ready'])
                 self.assertFalse(result['models_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.3')
+                self.assertEqual(result['version'], '3.0.0-beta.4')
             finally:
                 server.shutdown()
                 server.server_close()
+
+    def test_entrypoint_restores_comfy_before_linking_flashvsr(self):
+        script = (Path(__file__).resolve().parents[1] / 'scripts' / 'entrypoint-v3-beta.sh').read_text()
+        restore = script.index('cp -a "$baked_dir/." "$comfyui_dir/"')
+        link_target = script.index('node_target="$comfyui_dir/custom_nodes/ComfyUI-FlashVSR"')
+        self.assertLess(restore, link_target)
+        self.assertIn('[[ ! -f "$comfyui_dir/main.py" ]]', script)
 
 
 if __name__ == '__main__':

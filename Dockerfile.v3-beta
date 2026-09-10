@@ -1,6 +1,6 @@
 # Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.3 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.4 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=1

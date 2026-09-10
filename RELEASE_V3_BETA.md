@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.3`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.4`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable
@@ -38,3 +38,7 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 - RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
 - RunPod template ID: `ok09ni9573`
 - Visibility: Public
+
+## beta.4 startup fix
+
+The v3 wrapper now verifies that `ComfyUI/main.py` exists and restores the baked ComfyUI tree before linking the FlashVSR custom node. This repairs incomplete persistent volumes created by beta.3 while preserving downloaded models and user files.
