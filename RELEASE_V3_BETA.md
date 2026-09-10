@@ -38,6 +38,8 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 - RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
 - RunPod template ID: `ok09ni9573`
 - Visibility: Public
+- Service names in the template README: Port 3000 `Page`, Port 8188 `Comfy`, Port 8888 `JupyterLab`
+- RunPod's Connect dialog controls the built-in `HTTP Service` button labels; custom per-port button labels are not part of the template API.
 
 ## beta.4 startup fix
 
