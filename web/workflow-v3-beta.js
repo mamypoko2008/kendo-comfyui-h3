@@ -53,7 +53,7 @@
     } else {
       w.seedDit=n('SeedVR2LoadDiTModel',{model:'seedvr2_ema_3b_fp8_e4m3fn.safetensors',device:'cuda:0',blocks_to_swap:16,swap_io_components:true,offload_device:'cpu',cache_model:false,attention_mode:'sageattn_2'});
       w.seedVae=n('SeedVR2LoadVAEModel',{model:'ema_vae_fp16.safetensors',device:'cuda:0',encode_tiled:true,encode_tile_size:1024,encode_tile_overlap:128,decode_tiled:true,decode_tile_size:768,decode_tile_overlap:128,tile_debug:'false',offload_device:'cpu',cache_model:false});
-      w.upscale=n('SeedVR2VideoUpscaler',{image:['source',0],dit:['seedDit',0],vae:['seedVae',0],seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER),resolution:targetResolution,max_resolution:2560,batch_size:5,uniform_batch_size:true,temporal_overlap:1,prepend_frames:0,color_correction:'lab',input_noise_scale:0,latent_noise_scale:0,offload_device:'cpu',enable_debug:false});
+      w.upscale=n('SeedVR2VideoUpscaler',{image:['source',0],dit:['seedDit',0],vae:['seedVae',0],seed:Math.floor(Math.random()*0x100000000),resolution:targetResolution,max_resolution:2560,batch_size:5,uniform_batch_size:true,temporal_overlap:1,prepend_frames:0,color_correction:'lab',input_noise_scale:0,latent_noise_scale:0,offload_device:'cpu',enable_debug:false});
     }
     return w;
   }

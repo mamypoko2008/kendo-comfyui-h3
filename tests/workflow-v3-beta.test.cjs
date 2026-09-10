@@ -27,6 +27,8 @@ test('quality history upscale uses SeedVR2 temporal workflow',()=>{
   assert.equal(w.seedDit.inputs.model,'seedvr2_ema_3b_fp8_e4m3fn.safetensors');
   assert.equal(w.seedVae.class_type,'SeedVR2LoadVAEModel');
   assert.equal(w.upscale.class_type,'SeedVR2VideoUpscaler');
+  assert.ok(Number.isInteger(w.upscale.inputs.seed));
+  assert.ok(w.upscale.inputs.seed >= 0 && w.upscale.inputs.seed <= 4294967295);
   assert.equal(w.upscale.inputs.resolution,1080);
   assert.equal(w.upscale.inputs.batch_size,5);
   assert.deepEqual(w.upscale.inputs.image,['source',0]);

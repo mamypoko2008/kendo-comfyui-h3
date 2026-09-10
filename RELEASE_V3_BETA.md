@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.4`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.6`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable
@@ -55,3 +55,8 @@ The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created 
 - Quality mode uses SeedVR2 3B FP8 with 1080p and 1440p targets, tiled VAE processing, CPU offload, and source-audio passthrough.
 - H3, Fast Upscale, and Quality Upscale readiness are independent. H3 generation and the 67 MB Fast model do not wait for the 3.89 GB SeedVR2 download.
 - The public v3 RunPod template now points to beta.5. Live GPU quality and performance still require verification before promotion to stable.
+
+## beta.6 SeedVR2 validation fix
+
+- Limits the SeedVR2 upscale seed to the node's supported unsigned 32-bit range (`0` to `4,294,967,295`).
+- Upscaling remains prompt-free; the fix prevents ComfyUI from rejecting the workflow before execution.
