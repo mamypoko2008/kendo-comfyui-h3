@@ -1,15 +1,11 @@
 /* Shared by the browser and dependency-free workflow tests. */
 (function (root) {
-  function buildWorkflow({prompt, ratio, megapixels, duration, steps, images = [], videos = [], audios = [], videoAudio = false, upscale = false, upscaleScale = 2, upscalePreset = 'Fast (2x Speed)'}) {
+  function buildWorkflow({prompt, ratio, megapixels, duration, steps, images = [], videos = [], audios = [], videoAudio = false}) {
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
     if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
     const sizes = {'0.4':[864,480], '0.7':[1152,640], '1':[1344,768], '1.2':[1504,832], '1.5':[1632,928], '2':[1920,1088]};
     if (!sizes[String(megapixels)] || !['16:9','9:16','1:1'].includes(ratio)) throw new Error('Invalid resolution');
-    if (upscale && megapixels !== 1) throw new Error('Video upscale requires the native 1 MP source');
-    if (upscale && ![2,4].includes(upscaleScale)) throw new Error('Invalid upscale scale');
-    const upscalePresets = ['Fast (2x Speed)','Balanced (2x Quality)','Long Video (Low VRAM)','High Quality (Best)'];
-    if (upscale && !upscalePresets.includes(upscalePreset)) throw new Error('Invalid upscale preset');
     let [width,height] = sizes[String(megapixels)];
     if (ratio === '9:16') [width,height] = [height,width];
     if (ratio === '1:1') width = height = Math.round(Math.sqrt(megapixels * 1e6) / 32) * 32;
@@ -30,14 +26,8 @@
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta5',format:'auto',codec:'auto',video:['video',0]})
     };
-    if (upscale) {
-      w.upscale = n('AILab_FlashVSR',{frames:['decode',0],preset:upscalePreset,scale:upscaleScale,unload_model:false,seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER),audio:['decodeAudio',0]});
-      w.video.inputs.images = ['upscale',0];
-      w.video.inputs.audio = ['upscale',1];
-      w.save.inputs.filename_prefix = 'video/Kendo_H3_v3_beta_upscaled';
-    }
     images.forEach((image,i)=>{w['image'+i]=n('LoadImage',{image});w.reference.inputs['ref_images.ref_image_'+i]=['image'+i,0]});
     videos.forEach((video,i)=>{
       w['refVideo'+i]=n('VHS_LoadVideo',{video,force_rate:24,custom_width:0,custom_height:0,frame_load_cap:frames,skip_first_frames:0,select_every_nth:1});
@@ -47,18 +37,25 @@
     audios.forEach((audio,i)=>{w['audio'+i]=n('LoadAudio',{audio});w.reference.inputs['ref_audios.ref_audio_'+i]=['audio'+i,0]});
     return w;
   }
-  function buildUpscaleWorkflow({video, scale = 2, preset = 'Fast (2x Speed)'}) {
+  function buildUpscaleWorkflow({video, engine = 'realesrgan', targetResolution = 1080}) {
     if (!video) throw new Error('Video is required');
-    if (![2,4].includes(scale)) throw new Error('Invalid upscale scale');
-    const presets = ['Fast (2x Speed)','Balanced (2x Quality)','Long Video (Low VRAM)','High Quality (Best)'];
-    if (!presets.includes(preset)) throw new Error('Invalid upscale preset');
+    if (!['realesrgan','seedvr2'].includes(engine)) throw new Error('Invalid upscale engine');
+    if (![1080,1440].includes(targetResolution)) throw new Error('Invalid SeedVR2 resolution');
     const n = (class_type, inputs) => ({class_type, inputs});
-    return {
+    const w = {
       source:n('VHS_LoadVideo',{video,force_rate:24,custom_width:0,custom_height:0,frame_load_cap:0,skip_first_frames:0,select_every_nth:1}),
-      upscale:n('AILab_FlashVSR',{frames:['source',0],preset,scale,unload_model:false,seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER),audio:['source',2]}),
-      video:n('CreateVideo',{fps:24,bit_depth:8,images:['upscale',0],audio:['upscale',1]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta_upscaled',format:'auto',codec:'auto',video:['video',0]})
+      video:n('CreateVideo',{fps:24,bit_depth:8,images:['upscale',0],audio:['source',2]}),
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta5_upscaled',format:'auto',codec:'auto',video:['video',0]})
     };
+    if (engine === 'realesrgan') {
+      w.upscaleModel=n('UpscaleModelLoader',{model_name:'RealESRGAN_x2plus.pth'});
+      w.upscale=n('ImageUpscaleWithModel',{upscale_model:['upscaleModel',0],image:['source',0]});
+    } else {
+      w.seedDit=n('SeedVR2LoadDiTModel',{model:'seedvr2_ema_3b_fp8_e4m3fn.safetensors',device:'cuda:0',blocks_to_swap:16,swap_io_components:true,offload_device:'cpu',cache_model:false,attention_mode:'sageattn_2'});
+      w.seedVae=n('SeedVR2LoadVAEModel',{model:'ema_vae_fp16.safetensors',device:'cuda:0',encode_tiled:true,encode_tile_size:1024,encode_tile_overlap:128,decode_tiled:true,decode_tile_size:768,decode_tile_overlap:128,tile_debug:'false',offload_device:'cpu',cache_model:false});
+      w.upscale=n('SeedVR2VideoUpscaler',{image:['source',0],dit:['seedDit',0],vae:['seedVae',0],seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER),resolution:targetResolution,max_resolution:2560,batch_size:5,uniform_batch_size:true,temporal_overlap:1,prepend_frames:0,color_correction:'lab',input_noise_scale:0,latent_noise_scale:0,offload_device:'cpu',enable_debug:false});
+    }
+    return w;
   }
   if(typeof module !== 'undefined') module.exports={buildWorkflow,buildUpscaleWorkflow};
   else root.KendoWorkflow={buildWorkflow,buildUpscaleWorkflow};

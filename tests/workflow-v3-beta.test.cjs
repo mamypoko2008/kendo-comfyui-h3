@@ -8,35 +8,35 @@ test('v3 beta keeps the v2 graph unchanged when upscale is off',()=>{
   const w=buildWorkflow(base);
   assert.ok(!w.upscale);
   assert.deepEqual(w.video.inputs.images,['decode',0]);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta');
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta5');
 });
 
-test('inline FlashVSR upscale uses native H3 resolution and preserves audio',()=>{
-  const w=buildWorkflow({...base,upscale:true,upscaleScale:2,upscalePreset:'Fast (2x Speed)'});
-  assert.equal(w.reference.inputs.width,1344);
-  assert.equal(w.reference.inputs.height,768);
-  assert.equal(w.upscale.class_type,'AILab_FlashVSR');
-  assert.equal(w.upscale.inputs.scale,2);
-  assert.equal(w.upscale.inputs.preset,'Fast (2x Speed)');
-  assert.deepEqual(w.upscale.inputs.frames,['decode',0]);
-  assert.deepEqual(w.upscale.inputs.audio,['decodeAudio',0]);
-  assert.deepEqual(w.video.inputs.images,['upscale',0]);
-  assert.deepEqual(w.video.inputs.audio,['upscale',1]);
-});
-
-test('upscale requires native 1 MP and supported FlashVSR settings',()=>{
-  assert.throws(()=>buildWorkflow({...base,megapixels:.7,upscale:true}),/native 1 MP/);
-  assert.throws(()=>buildWorkflow({...base,upscale:true,upscaleScale:3}),/scale/);
-  assert.throws(()=>buildWorkflow({...base,upscale:true,upscalePreset:'unknown'}),/preset/);
-});
-
-test('history upscale graph skips H3 generation and passes source audio',()=>{
-  const w=buildUpscaleWorkflow({video:'old.mp4',scale:4,preset:'Long Video (Low VRAM)'});
+test('fast history upscale uses Real-ESRGAN and preserves source audio',()=>{
+  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'realesrgan'});
   assert.equal(w.source.class_type,'VHS_LoadVideo');
-  assert.equal(w.source.inputs.video,'old.mp4');
-  assert.equal(w.upscale.class_type,'AILab_FlashVSR');
-  assert.deepEqual(w.upscale.inputs.frames,['source',0]);
-  assert.deepEqual(w.upscale.inputs.audio,['source',2]);
-  assert.equal(w.upscale.inputs.scale,4);
+  assert.equal(w.upscaleModel.class_type,'UpscaleModelLoader');
+  assert.equal(w.upscaleModel.inputs.model_name,'RealESRGAN_x2plus.pth');
+  assert.equal(w.upscale.class_type,'ImageUpscaleWithModel');
+  assert.deepEqual(w.upscale.inputs.image,['source',0]);
+  assert.deepEqual(w.video.inputs.audio,['source',2]);
+});
+
+test('quality history upscale uses SeedVR2 temporal workflow',()=>{
+  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'seedvr2',targetResolution:1080});
+  assert.equal(w.seedDit.class_type,'SeedVR2LoadDiTModel');
+  assert.equal(w.seedDit.inputs.model,'seedvr2_ema_3b_fp8_e4m3fn.safetensors');
+  assert.equal(w.seedVae.class_type,'SeedVR2LoadVAEModel');
+  assert.equal(w.upscale.class_type,'SeedVR2VideoUpscaler');
+  assert.equal(w.upscale.inputs.resolution,1080);
+  assert.equal(w.upscale.inputs.batch_size,5);
+  assert.deepEqual(w.upscale.inputs.image,['source',0]);
+  assert.deepEqual(w.video.inputs.audio,['source',2]);
+});
+
+test('upscale validates engine and skips H3 generation',()=>{
+  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'flashvsr'}),/engine/);
+  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'seedvr2',targetResolution:720}),/resolution/);
+  const w=buildUpscaleWorkflow({video:'old.mp4'});
   assert.ok(!w.model&&!w.reference&&!w.sample);
+  assert.ok(!JSON.stringify(w).includes('FlashVSR'));
 });

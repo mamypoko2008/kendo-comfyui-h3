@@ -1,12 +1,12 @@
 # Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.4 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.5 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=1
-RUN git clone https://github.com/1038lab/ComfyUI-FlashVSR.git /opt/kendo/custom_nodes/ComfyUI-FlashVSR \
-    && cd /opt/kendo/custom_nodes/ComfyUI-FlashVSR \
-    && git checkout 8877fdd593ea93b27353956dc69edf423c561fee \
+RUN git clone https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git /opt/kendo/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler \
+    && cd /opt/kendo/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler \
+    && git checkout 4490bd1f482e026674543386bb2a4d176da245b9 \
     && python3.12 -m pip install --no-cache-dir -r requirements.txt
 COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh

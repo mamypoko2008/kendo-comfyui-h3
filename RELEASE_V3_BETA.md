@@ -46,3 +46,12 @@ GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwe
 The v3 wrapper now verifies that `ComfyUI/main.py` exists and restores the baked ComfyUI tree before linking the FlashVSR custom node. This repairs incomplete persistent volumes created by beta.3 while preserving downloaded models and user files.
 
 The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created from an earlier image must be redeployed to run beta.4.
+
+## beta.5 upscale workspace
+
+- Removes FlashVSR from the image and generated workflows.
+- An Upscale action selects its history clip and opens a dedicated workspace before any job is submitted.
+- Fast mode uses `RealESRGAN_x2plus.pth` for frame-based 2x upscaling.
+- Quality mode uses SeedVR2 3B FP8 with 1080p and 1440p targets, tiled VAE processing, CPU offload, and source-audio passthrough.
+- H3, Fast Upscale, and Quality Upscale readiness are independent. H3 generation and the 67 MB Fast model do not wait for the 3.89 GB SeedVR2 download.
+- beta.4 remains the currently published template image until the beta.5 container build is verified.

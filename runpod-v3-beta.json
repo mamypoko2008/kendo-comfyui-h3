@@ -1,6 +1,6 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v3 beta",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.4",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.5",
   "category": "NVIDIA",
   "containerDiskInGb": 30,
   "dockerEntrypoint": [],
@@ -22,5 +22,5 @@
     "KENDO_WAIT_FOR_MODELS": "0",
     "KENDO_MODEL_DOWNLOAD_WORKERS": "4"
   },
-  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta with optional FlashVSR video upscaling. Supports 9 image references, 1 video reference, and 3 audio references. Existing v2 remains unchanged."
+  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.5 with clip-based Fast (Real-ESRGAN) and Quality (SeedVR2) upscaling. Supports 9 image references, 1 video reference, and 3 audio references. Existing releases remain unchanged."
 }

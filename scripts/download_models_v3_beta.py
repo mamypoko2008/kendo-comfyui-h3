@@ -11,7 +11,7 @@ def download(relative, expected, url):
     target = Path(MODEL_ROOT, relative)
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.is_file() and target.stat().st_size == expected:
-        print('[KENDO v3 beta] Reusing ' + relative, flush=True)
+        print('[KENDO v3 beta.5] Reusing ' + relative, flush=True)
         return
     if target.exists():
         target.rename(str(target) + '.incomplete.' + str(time.time_ns()))
@@ -27,7 +27,7 @@ def download(relative, expected, url):
     if partial.stat().st_size != expected:
         raise RuntimeError('Incorrect size: ' + relative)
     partial.replace(target)
-    print('[KENDO v3 beta] Ready ' + relative, flush=True)
+    print('[KENDO v3 beta.5] Ready ' + relative, flush=True)
 
 def main():
     # Share v1's lock because both releases reuse encoder/VAE paths.
@@ -41,7 +41,7 @@ def main():
                 futures = [pool.submit(download, *spec) for spec in MODEL_SPECS]
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
-            Path(READY_FILE).write_text('v3 beta ready\n')
+            Path(READY_FILE).write_text('v3 beta.5 ready\n')
         except Exception as error:
             Path(ERROR_FILE).write_text(str(error))
             raise
