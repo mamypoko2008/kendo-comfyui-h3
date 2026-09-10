@@ -28,3 +28,13 @@ FlashVSR custom node is pinned to commit `8877fdd593ea93b27353956dc69edf423c561f
 Five FlashVSR files add 6,691,132,322 bytes to the existing H3 model set. Downloads are resumable and run in parallel. H3 readiness and FlashVSR readiness are independent: normal H3 generation becomes available as soon as the H3 files and ComfyUI are ready, while upscale controls wait for the extra models.
 
 GPU generation and upscale still require a live RTX 5090 or RTX PRO 6000 Blackwell verification before the beta is promoted to a stable release.
+
+## Published beta
+
+- Repository commit: `6fbf4c3`
+- Release tag: `v3.0.0-beta.3`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34428082137
+- Image digest: `sha256:473dc0be0440fb8003efa93b54e45c0c69b0a51e092f1108aa352d70d7b76ee2`
+- RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
+- RunPod template ID: `ok09ni9573`
+- Visibility: Public
