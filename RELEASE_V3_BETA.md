@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.2`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.3`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable
@@ -21,7 +21,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 - Work history displays the video and actions only; prompts are not rendered or stored in v3 history
 - SageAttention already included in the base image is detected automatically by FlashVSR
 
-FlashVSR custom node is pinned to commit `98f2769d74e74835df307b93e6b38268e173594f`.
+FlashVSR custom node is pinned to commit `8877fdd593ea93b27353956dc69edf423c561fee`.
 
 ## First launch
 
