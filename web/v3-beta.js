@@ -52,13 +52,13 @@ function videoUrl(file){return '/api/comfy/view?'+new URLSearchParams({filename:
 function showVideo(url){$('#welcome').hidden=true;$('#preview video')?.remove();const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;$('#preview').append(v);$('#download').href=url;$('#download').hidden=false;const button=$('#upscale-current');button.hidden=false;button.disabled=false;button.onclick=()=>openUpscaleWorkspace({url},button)}
 function readHistory(){try{return JSON.parse(localStorage.getItem('kendo-h3-v3-beta-history')||'[]')}catch{return []}}
 function renderHistory(){const history=readHistory();$('#history').replaceChildren(...history.map(item=>{const article=document.createElement('article'),v=document.createElement('video'),actions=document.createElement('div'),a=document.createElement('a'),b=document.createElement('button');v.src=item.url;v.controls=true;v.preload='metadata';actions.className='history-actions';a.href=item.url;a.download='';a.textContent='↓ ดาวน์โหลด';b.textContent='↑ อัปสเกล';b.onclick=()=>{document.querySelectorAll('.history article').forEach(card=>card.classList.remove('selected'));article.classList.add('selected');openUpscaleWorkspace(item,b)};actions.append(a,b);article.append(v,actions);return article}))}
-function upscaleEngineReady(engine){return engine==='rtx'?ready:engine==='seedvr2'?qualityUpscaleReady:fastUpscaleReady}
-function upscaleEngineName(engine){return engine==='rtx'?'NVIDIA RTX VSR':engine==='seedvr2'?'SeedVR2 Quality':'Real-ESRGAN Fast'}
+function upscaleEngineReady(engine){return engine==='seedvr2'?qualityUpscaleReady:fastUpscaleReady}
+function upscaleEngineName(engine){return engine==='seedvr2'?'SeedVR2 Quality':'Real-ESRGAN Fast'}
 function updateUpscaleWorkspace(){
-  const engine=$('#upscale-engine').value,isQuality=engine==='seedvr2',isRtx=engine==='rtx',isReady=upscaleEngineReady(engine);
+  const engine=$('#upscale-engine').value,isQuality=engine==='seedvr2',isReady=upscaleEngineReady(engine);
   $('#upscale-target').disabled=!isQuality;
   $('#start-upscale').disabled=!selectedUpscale||!isReady;
-  $('#upscale-description').textContent=isRtx?(isReady?'RTX VSR พร้อม · ขยาย 2× ระดับ Ultra เร็วและไม่ต้องโหลดโมเดลเพิ่ม · ต้องใช้ Linux driver 580.82+':'RTX VSR จะพร้อมเมื่อ ComfyUI เริ่มทำงาน'):isQuality?(isReady?'SeedVR2 พร้อม · รักษาความต่อเนื่องระหว่างเฟรม ใช้เวลานานกว่า':'SeedVR2 กำลังดาวน์โหลด · เลือกได้แต่ยังเริ่มงานไม่ได้'):(isReady?'Real-ESRGAN พร้อม · ขยาย 2× แบบเร็วและรักษาภาพต้นฉบับ':'Real-ESRGAN กำลังเตรียมไฟล์โมเดล');
+  $('#upscale-description').textContent=isQuality?(isReady?'SeedVR2 พร้อม · รักษาความต่อเนื่องระหว่างเฟรม ใช้เวลานานกว่า':'SeedVR2 กำลังดาวน์โหลด · เลือกได้แต่ยังเริ่มงานไม่ได้'):(isReady?'Real-ESRGAN พร้อม · ขยาย 2× แบบเร็วและรักษาภาพต้นฉบับ':'Real-ESRGAN กำลังเตรียมไฟล์โมเดล');
 }
 function openUpscaleWorkspace(item,button){
   selectedUpscale={item,button};const panel=$('#upscale-workspace');panel.hidden=false;$('#upscale-source-preview').src=item.url;updateUpscaleWorkspace();panel.scrollIntoView({behavior:'smooth',block:'start'});

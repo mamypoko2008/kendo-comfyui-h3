@@ -16,8 +16,12 @@ old_flash="$comfyui_dir/custom_nodes/ComfyUI-FlashVSR"
 if [[ -L "$old_flash" ]]; then
   rm "$old_flash"
 fi
+old_rtx="$comfyui_dir/custom_nodes/Nvidia_RTX_Nodes_ComfyUI"
+if [[ -L "$old_rtx" ]]; then
+  rm "$old_rtx"
+fi
 mkdir -p "$comfyui_dir/custom_nodes"
-for node_name in ComfyUI-SeedVR2_VideoUpscaler Nvidia_RTX_Nodes_ComfyUI; do
+for node_name in ComfyUI-SeedVR2_VideoUpscaler; do
   node_source="/opt/kendo/custom_nodes/$node_name"
   node_target="$comfyui_dir/custom_nodes/$node_name"
   if [[ ! -e "$node_target" && ! -L "$node_target" ]]; then

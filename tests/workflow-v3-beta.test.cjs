@@ -8,20 +8,19 @@ test('v3 beta keeps the v2 graph unchanged when upscale is off',()=>{
   const w=buildWorkflow(base);
   assert.ok(!w.upscale);
   assert.deepEqual(w.video.inputs.images,['decode',0]);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta8');
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta9');
 });
 
-test('default history upscale uses NVIDIA RTX VSR Ultra 2x and preserves source audio',()=>{
+test('default history upscale uses Real-ESRGAN 2x and preserves source audio',()=>{
   const w=buildUpscaleWorkflow({video:'old.mp4'});
   assert.equal(w.source.class_type,'VHS_LoadVideo');
-  assert.equal(w.upscale.class_type,'RTXVideoSuperResolution');
-  assert.deepEqual(w.upscale.inputs.images,['source',0]);
-  assert.equal(w.upscale.inputs.resize_type,'scale by multiplier');
-  assert.equal(w.upscale.inputs['resize_type.scale'],2);
-  assert.equal(typeof w.upscale.inputs.resize_type,'string');
-  assert.equal(w.upscale.inputs.quality,'ULTRA');
+  assert.equal(w.upscaleModel.class_type,'UpscaleModelLoader');
+  assert.equal(w.upscaleModel.inputs.model_name,'RealESRGAN_x2plus.pth');
+  assert.equal(w.upscale.class_type,'ImageUpscaleWithModel');
+  assert.deepEqual(w.upscale.inputs.image,['source',0]);
   assert.deepEqual(w.video.inputs.audio,['source',2]);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta8_upscaled');
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta9_upscaled');
+  assert.ok(!JSON.stringify(w).includes('RTXVideoSuperResolution'));
 });
 
 test('fast history upscale uses Real-ESRGAN and preserves source audio',()=>{
@@ -50,8 +49,10 @@ test('quality history upscale uses SeedVR2 temporal workflow',()=>{
 
 test('upscale validates engine and skips H3 generation',()=>{
   assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'flashvsr'}),/engine/);
+  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'rtx'}),/engine/);
   assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'seedvr2',targetResolution:720}),/resolution/);
-  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'rtx',targetResolution:720});
+  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'realesrgan',targetResolution:720});
   assert.ok(!w.model&&!w.reference&&!w.sample);
   assert.ok(!JSON.stringify(w).includes('FlashVSR'));
+  assert.ok(!JSON.stringify(w).includes('RTXVideoSuperResolution'));
 });

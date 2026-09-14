@@ -26,7 +26,7 @@ class V3BetaHandler(base.KendoPageHandler):
             fast_upscale_ready=models.fast_upscale_files_ready(),
             quality_upscale_ready=models.quality_upscale_files_ready(), comfy_ready=self._comfy_ready(),
             download_error=error, downloaded_bytes=downloaded, total_bytes=total,
-            progress=round(downloaded * 100 / total, 1), version='3.0.0-beta.8')).encode()
+            progress=round(downloaded * 100 / total, 1), version='3.0.0-beta.9')).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')

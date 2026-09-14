@@ -26,7 +26,7 @@
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta8',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta9',format:'auto',codec:'auto',video:['video',0]})
     };
     images.forEach((image,i)=>{w['image'+i]=n('LoadImage',{image});w.reference.inputs['ref_images.ref_image_'+i]=['image'+i,0]});
     videos.forEach((video,i)=>{
@@ -37,21 +37,17 @@
     audios.forEach((audio,i)=>{w['audio'+i]=n('LoadAudio',{audio});w.reference.inputs['ref_audios.ref_audio_'+i]=['audio'+i,0]});
     return w;
   }
-  function buildUpscaleWorkflow({video, engine = 'rtx', targetResolution = 1080}) {
+  function buildUpscaleWorkflow({video, engine = 'realesrgan', targetResolution = 1080}) {
     if (!video) throw new Error('Video is required');
-    if (!['rtx','realesrgan','seedvr2'].includes(engine)) throw new Error('Invalid upscale engine');
+    if (!['realesrgan','seedvr2'].includes(engine)) throw new Error('Invalid upscale engine');
     if (engine === 'seedvr2' && ![1080,1440].includes(targetResolution)) throw new Error('Invalid SeedVR2 resolution');
     const n = (class_type, inputs) => ({class_type, inputs});
     const w = {
       source:n('VHS_LoadVideo',{video,force_rate:24,custom_width:0,custom_height:0,frame_load_cap:0,skip_first_frames:0,select_every_nth:1}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['upscale',0],audio:['source',2]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta8_upscaled',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta9_upscaled',format:'auto',codec:'auto',video:['video',0]})
     };
-    if (engine === 'rtx') {
-      // ComfyUI v3 dynamic combos use flat live-input keys and are rebuilt
-      // into the dictionary received by RTXVideoSuperResolution.execute().
-      w.upscale=n('RTXVideoSuperResolution',{images:['source',0],resize_type:'scale by multiplier','resize_type.scale':2,quality:'ULTRA'});
-    } else if (engine === 'realesrgan') {
+    if (engine === 'realesrgan') {
       w.upscaleModel=n('UpscaleModelLoader',{model_name:'RealESRGAN_x2plus.pth'});
       w.upscale=n('ImageUpscaleWithModel',{upscale_model:['upscaleModel',0],image:['source',0]});
     } else {

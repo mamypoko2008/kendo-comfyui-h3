@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.8`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.9`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable
@@ -13,17 +13,14 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 ## Video upscale
 
 - Every completed clip has a separate Upscale button and workspace; H3 is not regenerated.
-- NVIDIA RTX Video Super Resolution 2x at Ultra quality is the beta.7 default.
-- Real-ESRGAN 2x and SeedVR2 1080p/1440p remain available as alternatives.
+- Real-ESRGAN 2x is the default upscaler.
+- SeedVR2 1080p/1440p remains available as the quality option.
 - Source audio is passed through to every upscaled output.
 - Work history displays videos and actions only; prompts are not rendered or stored.
-- RTX VSR is bundled in the image and does not download a separate model at Pod startup.
-
-The official NVIDIA RTX ComfyUI node is pinned to commit `892515e3eb9a4920a131a502a047e47adca9eb0d`. Its `nvidia-vfx==0.1.0.1` runtime requires a supported NVIDIA RTX GPU and Linux driver 580.82 or newer.
 
 ## First launch
 
-H3, the 67 MB Real-ESRGAN model, and the 3.89 GB SeedVR2 model set download resumably and in parallel. Their readiness is independent, so normal H3 generation and RTX VSR do not wait for SeedVR2. RTX VSR adds no model download at Pod startup.
+H3, the 67 MB Real-ESRGAN model, and the 3.89 GB SeedVR2 model set download resumably and in parallel. Their readiness is independent, so normal H3 generation and Real-ESRGAN do not wait for SeedVR2.
 
 GPU generation and upscale still require live verification before the beta is promoted to a stable release.
 
@@ -71,3 +68,10 @@ The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created 
 - Sends RTX VSR's ComfyUI v3 DynamicCombo as flat live-input keys: `resize_type` and `resize_type.scale`.
 - Fixes `RTXVideoSuperResolution.execute() missing ... resize_type` without changing the RTX node or other upscalers.
 - Adds a regression assertion for the exact API payload and keeps v1/v2 unchanged.
+
+## beta.9 RTX VSR removal
+
+- Removes the NVIDIA RTX VSR node, runtime dependency, workflow, and UI option after live RunPod testing reached upstream `NvVFX_Load` initialization error `-12`.
+- Restores Real-ESRGAN 2x as the default clip upscaler and keeps SeedVR2 as the quality option.
+- Cleans up only the old RTX symlink from persistent v3 workspaces; user-installed directories are preserved.
+- Keeps v1, v2, generation settings, reference limits, prompt-free history, and the standalone upscale workspace unchanged.
