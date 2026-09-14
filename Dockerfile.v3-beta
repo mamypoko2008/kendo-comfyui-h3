@@ -1,13 +1,17 @@
 # Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.6 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.7 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=1
 RUN git clone https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git /opt/kendo/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler \
     && cd /opt/kendo/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler \
     && git checkout 4490bd1f482e026674543386bb2a4d176da245b9 \
-    && python3.12 -m pip install --no-cache-dir -r requirements.txt
+    && python3.12 -m pip install --no-cache-dir -r requirements.txt \
+    && git clone https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI.git /opt/kendo/custom_nodes/Nvidia_RTX_Nodes_ComfyUI \
+    && cd /opt/kendo/custom_nodes/Nvidia_RTX_Nodes_ComfyUI \
+    && git checkout 892515e3eb9a4920a131a502a047e47adca9eb0d \
+    && python3.12 -m pip install --no-cache-dir nvidia-vfx==0.1.0.1
 COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh
 COPY scripts/page_server.py /opt/kendo/page_server_base.py

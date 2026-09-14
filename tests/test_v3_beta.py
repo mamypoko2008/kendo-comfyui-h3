@@ -57,18 +57,19 @@ class V3BetaReadinessTest(unittest.TestCase):
                 self.assertFalse(result['fast_upscale_ready'])
                 self.assertFalse(result['quality_upscale_ready'])
                 self.assertFalse(result['models_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.5')
+                self.assertEqual(result['version'], '3.0.0-beta.7')
             finally:
                 server.shutdown()
                 server.server_close()
 
-    def test_entrypoint_restores_comfy_before_linking_seedvr2(self):
+    def test_entrypoint_restores_comfy_before_linking_upscalers(self):
         script = (Path(__file__).resolve().parents[1] / 'scripts' / 'entrypoint-v3-beta.sh').read_text()
         restore = script.index('cp -a "$baked_dir/." "$comfyui_dir/"')
-        link_target = script.index('node_target="$comfyui_dir/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler"')
+        link_target = script.index('for node_name in ComfyUI-SeedVR2_VideoUpscaler Nvidia_RTX_Nodes_ComfyUI')
         self.assertLess(restore, link_target)
         self.assertIn('[[ ! -f "$comfyui_dir/main.py" ]]', script)
         self.assertIn('if [[ -L "$old_flash" ]]', script)
+        self.assertIn('Nvidia_RTX_Nodes_ComfyUI', script)
 
 
 if __name__ == '__main__':

@@ -16,12 +16,14 @@ old_flash="$comfyui_dir/custom_nodes/ComfyUI-FlashVSR"
 if [[ -L "$old_flash" ]]; then
   rm "$old_flash"
 fi
-node_source=/opt/kendo/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler
-node_target="$comfyui_dir/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler"
-mkdir -p "$(dirname "$node_target")"
-if [[ ! -e "$node_target" && ! -L "$node_target" ]]; then
-  ln -s "$node_source" "$node_target"
-fi
+mkdir -p "$comfyui_dir/custom_nodes"
+for node_name in ComfyUI-SeedVR2_VideoUpscaler Nvidia_RTX_Nodes_ComfyUI; do
+  node_source="/opt/kendo/custom_nodes/$node_name"
+  node_target="$comfyui_dir/custom_nodes/$node_name"
+  if [[ ! -e "$node_target" && ! -L "$node_target" ]]; then
+    ln -s "$node_source" "$node_target"
+  fi
+done
 args_file=/workspace/runpod-slim/comfyui_args.txt
 mkdir -p "$(dirname "$args_file")"
 touch "$args_file"
