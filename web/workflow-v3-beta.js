@@ -26,7 +26,7 @@
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta7',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta8',format:'auto',codec:'auto',video:['video',0]})
     };
     images.forEach((image,i)=>{w['image'+i]=n('LoadImage',{image});w.reference.inputs['ref_images.ref_image_'+i]=['image'+i,0]});
     videos.forEach((video,i)=>{
@@ -45,10 +45,12 @@
     const w = {
       source:n('VHS_LoadVideo',{video,force_rate:24,custom_width:0,custom_height:0,frame_load_cap:0,skip_first_frames:0,select_every_nth:1}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['upscale',0],audio:['source',2]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta7_upscaled',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta8_upscaled',format:'auto',codec:'auto',video:['video',0]})
     };
     if (engine === 'rtx') {
-      w.upscale=n('RTXVideoSuperResolution',{images:['source',0],resize_type:{resize_type:'scale by multiplier',scale:2},quality:'ULTRA'});
+      // ComfyUI v3 dynamic combos use flat live-input keys and are rebuilt
+      // into the dictionary received by RTXVideoSuperResolution.execute().
+      w.upscale=n('RTXVideoSuperResolution',{images:['source',0],resize_type:'scale by multiplier','resize_type.scale':2,quality:'ULTRA'});
     } else if (engine === 'realesrgan') {
       w.upscaleModel=n('UpscaleModelLoader',{model_name:'RealESRGAN_x2plus.pth'});
       w.upscale=n('ImageUpscaleWithModel',{upscale_model:['upscaleModel',0],image:['source',0]});

@@ -1,6 +1,6 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v3 beta",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.7",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.8",
   "category": "NVIDIA",
   "containerDiskInGb": 30,
   "dockerEntrypoint": [],
@@ -22,5 +22,5 @@
     "KENDO_WAIT_FOR_MODELS": "0",
     "KENDO_MODEL_DOWNLOAD_WORKERS": "4"
   },
-  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.7 with NVIDIA RTX Video Super Resolution 2x as the default clip upscaler, plus Real-ESRGAN and SeedVR2 alternatives. RTX VSR requires a supported NVIDIA RTX GPU and Linux driver 580.82 or newer. Supports 9 image references, 1 video reference, and 3 audio references. Existing releases remain unchanged."
+  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.8 with NVIDIA RTX Video Super Resolution 2x as the default clip upscaler, plus Real-ESRGAN and SeedVR2 alternatives. beta.8 fixes the ComfyUI DynamicCombo API payload used by RTX VSR. RTX VSR requires a supported NVIDIA RTX GPU and Linux driver 580.82 or newer. Supports 9 image references, 1 video reference, and 3 audio references. Existing releases remain unchanged."
 }

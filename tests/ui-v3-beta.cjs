@@ -43,13 +43,14 @@ const assert=require('node:assert/strict');
     assert.equal(uploads,1);
     assert.equal(submitted.prompt.source.class_type,'VHS_LoadVideo');
     assert.equal(submitted.prompt.upscale.class_type,'RTXVideoSuperResolution');
-    assert.deepEqual(submitted.prompt.upscale.inputs.resize_type,{resize_type:'scale by multiplier',scale:2});
+    assert.equal(submitted.prompt.upscale.inputs.resize_type,'scale by multiplier');
+    assert.equal(submitted.prompt.upscale.inputs['resize_type.scale'],2);
     assert.equal(submitted.prompt.upscale.inputs.quality,'ULTRA');
     assert.ok(!submitted.prompt.model&&!submitted.prompt.reference);
     assert.ok(!JSON.stringify(submitted).includes('FlashVSR'));
     if(process.env.KENDO_UI_SCREENSHOT)await page.screenshot({path:process.env.KENDO_UI_SCREENSHOT,fullPage:true});
     assert.deepEqual(errors,[]);
-    console.log('v3 beta.7 UI passed: RTX VSR default, hidden prompts, and standalone upscale workspace');
+    console.log('v3 beta.8 UI passed: RTX VSR dynamic input, hidden prompts, and standalone upscale workspace');
   }finally{
     if(browser)await browser.close();
     server.close();

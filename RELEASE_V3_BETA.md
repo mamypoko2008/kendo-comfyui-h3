@@ -4,7 +4,7 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.7`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.8`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
 - Default H3 steps: 10, adjustable
@@ -65,3 +65,9 @@ The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created 
 - Keeps Real-ESRGAN and SeedVR2 selectable without changing their workflows.
 - Adds no startup model download; the NVIDIA VFX runtime is installed in the image.
 - Keeps v1, v2, and their RunPod templates unchanged.
+
+## beta.8 RTX DynamicCombo fix
+
+- Sends RTX VSR's ComfyUI v3 DynamicCombo as flat live-input keys: `resize_type` and `resize_type.scale`.
+- Fixes `RTXVideoSuperResolution.execute() missing ... resize_type` without changing the RTX node or other upscalers.
+- Adds a regression assertion for the exact API payload and keeps v1/v2 unchanged.
