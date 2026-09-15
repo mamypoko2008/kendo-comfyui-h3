@@ -1,6 +1,6 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v2",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.0",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.1",
   "category": "NVIDIA",
   "containerDiskInGb": 30,
   "dockerEntrypoint": [],

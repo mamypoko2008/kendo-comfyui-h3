@@ -2,7 +2,7 @@
 
 Separate release: keep existing RunPod templates and v1 image tags unchanged.
 
-- Image: ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.0
+- Image: ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.1
 - CUDA: 13.0 only; driver >=580.65.06
 - Container disk: 30 GB; persistent volume: 100 GB at /workspace
 - Ports: 3000/http, 8188/http, 8888/http, 22/tcp, 22/udp
@@ -19,6 +19,10 @@ Separate release: keep existing RunPod templates and v1 image tags unchanged.
 - Reference prompt tags are generated in model order, including video soundtracks.
 
 The v2.1.0 build completed successfully from commit `45a1dad`.
+
+## v2.1.1
+
+- Work history shows completed videos and downloads only; prompts are neither rendered nor saved for new jobs.
 
 - GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34356546640
 - Image digest: `sha256:426f5669d2bc6e1b50137e28649ac1dcc84c1614e25f15c9bd92182d4622b1df`
