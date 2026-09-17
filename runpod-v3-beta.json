@@ -1,6 +1,6 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v3 beta",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.9",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.10",
   "category": "NVIDIA",
   "containerDiskInGb": 30,
   "dockerEntrypoint": [],
@@ -17,10 +17,10 @@
   "isPublic": true,
   "isServerless": false,
   "env": {
-    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_ENABLE_SAGE": "0",
     "KENDO_AUTO_DOWNLOAD_MODELS": "1",
     "KENDO_WAIT_FOR_MODELS": "0",
     "KENDO_MODEL_DOWNLOAD_WORKERS": "4"
   },
-  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.9 with Real-ESRGAN 2x as the default clip upscaler and SeedVR2 1080p/1440p as the quality option. RTX VSR has been removed because the upstream NVIDIA VFX runtime does not initialize reliably in the current RunPod CUDA 13 environment. Supports 9 image references, 1 video reference, and 3 audio references. Existing releases remain unchanged."
+  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.10 rebuilt on the standard ComfyUI H3 graph with workflow-scoped KJNodes SageAttention. Includes the fal Realism People LoRA enabled at weight 0.75 by default, seed locking, 9 image references, 1 optional video reference, and 3 optional audio references. The old upscale stack has been removed. Existing v1/v2 releases remain unchanged."
 }

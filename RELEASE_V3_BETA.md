@@ -4,25 +4,35 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.9`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.10`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
-- H3: Ref2VA INT8 with the full Ref2VA Turbo LoRA
+- H3: standard ComfyUI Ref2VA INT8 graph with the full Ref2VA Turbo LoRA
+- Attention: explicit `Patch Sage Attention KJ` node (`auto`, compile disabled)
+- Creative LoRA: fal Realism People, enabled by default at `0.75`
 - Default H3 steps: 10, adjustable
 - References: 9 images, 1 video, 3 audio clips
 
-## Video upscale
+## Interface
 
-- Every completed clip has a separate Upscale button and workspace; H3 is not regenerated.
-- Real-ESRGAN 2x is the default upscaler.
-- SeedVR2 1080p/1440p remains available as the quality option.
-- Source audio is passed through to every upscaled output.
-- Work history displays videos and actions only; prompts are not rendered or stored.
+- Matches the current v2 layout, including responsive width, large image previews, seed locking, and prompt-free history.
+- Video Ref and Seed Lock are off by default.
+- The Realism People LoRA can be toggled and its weight adjusted from `0` to `2`.
+- When enabled, the recommended `r34l1sm` trigger is added internally without modifying the visible prompt.
 
 ## First launch
 
-H3, the 67 MB Real-ESRGAN model, and the 3.89 GB SeedVR2 model set download resumably and in parallel. Their readiness is independent, so normal H3 generation and Real-ESRGAN do not wait for SeedVR2.
+H3 models, the Turbo LoRA, and the 131 MB Realism People LoRA download resumably and in parallel. Removed upscaler models are no longer downloaded.
 
 GPU generation and upscale still require live verification before the beta is promoted to a stable release.
+
+## beta.10 clean generation stack
+
+- Removes the v3 upscaler UI, workflows, models, and SeedVR2 custom-node dependency.
+- Rebuilds generation from the known v2 graph with standard ComfyUI H3 nodes.
+- Adds pinned KJNodes v1.5.2 and applies SageAttention inside the workflow instead of the global launch flag.
+- Adds fal MiniMax H3 Realism People LoRA with a default weight of 0.75.
+- Restores the v2 interface, seed controls, larger attachment thumbnails, and default-off Video Ref.
+- Keeps v1 and v2 images/templates unchanged.
 
 ## Published beta
 

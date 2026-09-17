@@ -6,54 +6,44 @@ const assert=require('node:assert/strict');
 
 (async()=>{
   const allowed=new Set(['v3-beta.html','v3-beta.js','v3-beta.css','workflow-v3-beta.js']);
-  const server=http.createServer((req,res)=>{
-    const name=req.url==='/'?'v3-beta.html':req.url.slice(1);
-    if(!allowed.has(name)){res.writeHead(404);res.end();return}
-    res.setHeader('Content-Type',name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html');
-    res.end(fs.readFileSync(path.join(__dirname,'../web',name)));
-  });
+  const server=http.createServer((req,res)=>{const name=req.url==='/'?'v3-beta.html':req.url.slice(1);if(!allowed.has(name)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(__dirname,'../web',name)))});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   let browser;
   try{
     browser=await chromium.launch({channel:'msedge',headless:true});
-    const page=await browser.newPage({viewport:{width:1280,height:900}});
-    const errors=[];let submitted;let uploads=0;
+    const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
-    await page.addInitScript(()=>localStorage.setItem('kendo-h3-v3-beta-history',JSON.stringify([{url:'/api/comfy/view?filename=old.mp4',prompt:'PROMPT MUST NOT APPEAR'}])));
-    await page.route('**/api/kendo/status',route=>route.fulfill({json:{models_ready:true,base_models_ready:true,upscale_models_ready:true,fast_upscale_ready:true,quality_upscale_ready:true,comfy_ready:true,progress:100}}));
-    await page.route('**/api/comfy/view?filename=old.mp4',route=>route.fulfill({status:200,contentType:'video/mp4',body:Buffer.from('mock-video')}));
-    await page.route('**/api/comfy/upload/image',route=>{uploads++;route.fulfill({json:{name:'uploaded.mp4',subfolder:''}})});
-    await page.route('**/api/comfy/prompt',route=>{submitted=route.request().postDataJSON();route.fulfill({json:{prompt_id:'upscale-job'}})});
+    await page.addInitScript(()=>localStorage.setItem('kendo-h3-v3-beta10-history',JSON.stringify([{url:'/old.mp4',prompt:'PROMPT MUST NOT APPEAR',seed:2847193051}])));
+    let ready=false,submitted;
+    await page.route('**/api/kendo/status',route=>route.fulfill({json:{models_ready:ready,comfy_ready:true,progress:ready?100:42}}));
+    await page.route('**/api/comfy/upload/image',route=>route.fulfill({json:{name:'reference.png',subfolder:''}}));
+    await page.route('**/api/comfy/prompt',route=>{submitted=route.request().postDataJSON();route.fulfill({json:{prompt_id:'job'}})});
     await page.route('**/api/comfy/history/*',route=>route.fulfill({json:{}}));
     await page.goto('http://127.0.0.1:'+server.address().port);
-    await page.waitForFunction(()=>document.querySelector('#status').textContent==='READY');
-    assert.equal(await page.locator('#history article').count(),1);
+    assert.equal(await page.locator('#video-enabled').isChecked(),false);
+    assert.equal(await page.locator('#video-body').isHidden(),true);
+    assert.equal(await page.locator('#seed-lock').isChecked(),false);
+    assert.equal(await page.locator('#realism-enabled').isChecked(),true);
+    assert.equal(await page.locator('#realism-weight').inputValue(),'0.75');
     assert.equal(await page.locator('#history').getByText('PROMPT MUST NOT APPEAR').count(),0);
-    assert.equal(await page.locator('#history p').count(),0);
-    const historyUpscale=page.locator('#history button');
-    assert.equal(await historyUpscale.textContent(),'↑ อัปสเกล');
-    assert.equal(await historyUpscale.isDisabled(),false);
-    await historyUpscale.click();
-    assert.equal(await page.locator('#upscale-workspace').isVisible(),true);
-    assert.equal(await page.locator('#upscale-source-preview').getAttribute('src'),'/api/comfy/view?filename=old.mp4');
-    assert.equal(uploads,0);
-    assert.equal(submitted,undefined);
-    await page.locator('#start-upscale').click();
-    await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('Real-ESRGAN Fast'));
-    assert.equal(uploads,1);
-    assert.equal(submitted.prompt.source.class_type,'VHS_LoadVideo');
-    assert.equal(submitted.prompt.upscaleModel.class_type,'UpscaleModelLoader');
-    assert.equal(submitted.prompt.upscaleModel.inputs.model_name,'RealESRGAN_x2plus.pth');
-    assert.equal(submitted.prompt.upscale.class_type,'ImageUpscaleWithModel');
-    assert.deepEqual(submitted.prompt.upscale.inputs.image,['source',0]);
-    assert.ok(!submitted.prompt.model&&!submitted.prompt.reference);
-    assert.ok(!JSON.stringify(submitted).includes('FlashVSR'));
-    assert.ok(!JSON.stringify(submitted).includes('RTXVideoSuperResolution'));
-    if(process.env.KENDO_UI_SCREENSHOT)await page.screenshot({path:process.env.KENDO_UI_SCREENSHOT,fullPage:true});
+    await page.locator('.history-actions button').click();
+    assert.equal(await page.locator('#seed').inputValue(),'2847193051');
+    const sample=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640"><rect width="640" height="640" fill="#7d1730"/></svg>');
+    await page.locator('#image-input').setInputFiles({name:'portrait.png',mimeType:'image/svg+xml',buffer:sample});
+    assert.ok(await page.locator('#image-files img').evaluate(img=>img.getBoundingClientRect().width>=100));
+    await page.locator('#prompt').fill('cinematic close-up');ready=true;
+    await page.waitForFunction(()=>!document.querySelector('#generate').disabled);
+    await page.locator('#generate').click();
+    await page.waitForFunction(()=>document.querySelector('#notice').textContent.includes('ส่งเข้าคิวแล้ว'));
+    assert.equal(submitted.prompt.realism.inputs.strength_model,0.75);
+    assert.equal(submitted.prompt.sage.class_type,'PathchSageAttentionKJ');
+    assert.deepEqual(submitted.prompt.sage.inputs.model,['realism',0]);
+    assert.match(submitted.prompt.reference.inputs.prompt,/^r34l1sm, /);
+    assert.equal(submitted.prompt.noise.inputs.noise_seed,2847193051);
+    assert.ok(!JSON.stringify(submitted).match(/SeedVR2|RTXVideo|FlashVSR|Upscale/));
+    await page.setViewportSize({width:390,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
     assert.deepEqual(errors,[]);
-    console.log('v3 beta.9 UI passed: Real-ESRGAN default, hidden prompts, and standalone upscale workspace');
-  }finally{
-    if(browser)await browser.close();
-    server.close();
-  }
+    console.log('v3 beta.10 UI passed: v2 layout, default Realism 0.75, KJ SageAttention, seed reuse and prompt-free history');
+  }finally{if(browser)await browser.close();server.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

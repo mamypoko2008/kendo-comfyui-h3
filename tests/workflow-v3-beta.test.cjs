@@ -1,58 +1,54 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {buildWorkflow,buildUpscaleWorkflow}=require('../web/workflow-v3-beta.js');
+const {buildWorkflow,REALISM_LORA,REALISM_TRIGGER}=require('../web/workflow-v3-beta.js');
 
-const base={prompt:'test',ratio:'16:9',megapixels:1,duration:5,steps:10};
+const base={prompt:'cinematic portrait',ratio:'16:9',megapixels:0.4,duration:5,steps:10,seed:123456789};
 
-test('v3 beta keeps the v2 graph unchanged when upscale is off',()=>{
+test('v3 beta uses standard H3, stacked LoRAs and workflow-scoped KJ SageAttention',()=>{
   const w=buildWorkflow(base);
-  assert.ok(!w.upscale);
-  assert.deepEqual(w.video.inputs.images,['decode',0]);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta9');
+  assert.equal(w.model.class_type,'UNETLoader');
+  assert.equal(w.turbo.class_type,'LoraLoaderModelOnly');
+  assert.equal(w.realism.class_type,'LoraLoaderModelOnly');
+  assert.equal(w.realism.inputs.lora_name,REALISM_LORA);
+  assert.equal(w.realism.inputs.strength_model,0.75);
+  assert.deepEqual(w.realism.inputs.model,['turbo',0]);
+  assert.equal(w.sage.class_type,'PathchSageAttentionKJ');
+  assert.equal(w.sage.inputs.sage_attention,'auto');
+  assert.equal(w.sage.inputs.allow_compile,false);
+  assert.deepEqual(w.sage.inputs.model,['realism',0]);
+  assert.deepEqual(w.guider.inputs.model,['sage',0]);
+  assert.deepEqual(w.schedule.inputs.model,['sage',0]);
+  assert.match(w.reference.inputs.prompt,new RegExp('^'+REALISM_TRIGGER+', '));
+  assert.equal(w.noise.inputs.noise_seed,123456789);
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta10');
+  assert.ok(!JSON.stringify(w).match(/Upscale|SeedVR2|RTXVideo|FlashVSR/));
 });
 
-test('default history upscale uses Real-ESRGAN 2x and preserves source audio',()=>{
-  const w=buildUpscaleWorkflow({video:'old.mp4'});
-  assert.equal(w.source.class_type,'VHS_LoadVideo');
-  assert.equal(w.upscaleModel.class_type,'UpscaleModelLoader');
-  assert.equal(w.upscaleModel.inputs.model_name,'RealESRGAN_x2plus.pth');
-  assert.equal(w.upscale.class_type,'ImageUpscaleWithModel');
-  assert.deepEqual(w.upscale.inputs.image,['source',0]);
-  assert.deepEqual(w.video.inputs.audio,['source',2]);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta9_upscaled');
-  assert.ok(!JSON.stringify(w).includes('RTXVideoSuperResolution'));
+test('Realism LoRA can be disabled without disabling Turbo or KJ SageAttention',()=>{
+  const w=buildWorkflow({...base,realismEnabled:false,realismWeight:0.75});
+  assert.ok(!w.realism);
+  assert.deepEqual(w.sage.inputs.model,['turbo',0]);
+  assert.equal(w.reference.inputs.prompt,base.prompt);
 });
 
-test('fast history upscale uses Real-ESRGAN and preserves source audio',()=>{
-  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'realesrgan'});
-  assert.equal(w.source.class_type,'VHS_LoadVideo');
-  assert.equal(w.upscaleModel.class_type,'UpscaleModelLoader');
-  assert.equal(w.upscaleModel.inputs.model_name,'RealESRGAN_x2plus.pth');
-  assert.equal(w.upscale.class_type,'ImageUpscaleWithModel');
-  assert.deepEqual(w.upscale.inputs.image,['source',0]);
-  assert.deepEqual(w.video.inputs.audio,['source',2]);
+test('custom LoRA weight and existing trigger are preserved',()=>{
+  const w=buildWorkflow({...base,prompt:'r34l1sm, close-up',realismWeight:1.1});
+  assert.equal(w.realism.inputs.strength_model,1.1);
+  assert.equal(w.reference.inputs.prompt,'r34l1sm, close-up');
+  for(const weight of [-0.1,2.1,NaN])assert.throws(()=>buildWorkflow({...base,realismWeight:weight}),/LoRA/);
 });
 
-test('quality history upscale uses SeedVR2 temporal workflow',()=>{
-  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'seedvr2',targetResolution:1080});
-  assert.equal(w.seedDit.class_type,'SeedVR2LoadDiTModel');
-  assert.equal(w.seedDit.inputs.model,'seedvr2_ema_3b_fp8_e4m3fn.safetensors');
-  assert.equal(w.seedVae.class_type,'SeedVR2LoadVAEModel');
-  assert.equal(w.upscale.class_type,'SeedVR2VideoUpscaler');
-  assert.ok(Number.isInteger(w.upscale.inputs.seed));
-  assert.ok(w.upscale.inputs.seed >= 0 && w.upscale.inputs.seed <= 4294967295);
-  assert.equal(w.upscale.inputs.resolution,1080);
-  assert.equal(w.upscale.inputs.batch_size,5);
-  assert.deepEqual(w.upscale.inputs.image,['source',0]);
-  assert.deepEqual(w.video.inputs.audio,['source',2]);
+test('supports all reference inputs and validates limits',()=>{
+  const w=buildWorkflow({...base,images:Array.from({length:9},(_,i)=>i+'.png'),videos:['ref.mp4'],audios:['a.wav','b.wav','c.wav'],videoAudio:true});
+  assert.deepEqual(w.reference.inputs['ref_images.ref_image_8'],['image8',0]);
+  assert.deepEqual(w.reference.inputs['ref_videos.ref_video_0'],['refVideo0',0]);
+  assert.deepEqual(w.reference.inputs['ref_video_audios.ref_video_audio_0'],['refVideo0',2]);
+  assert.deepEqual(w.reference.inputs['ref_audios.ref_audio_2'],['audio2',0]);
+  for(const refs of [{images:Array(10).fill('a')},{videos:['a','b']},{audios:['a','b','c','d']}])assert.throws(()=>buildWorkflow({...base,...refs}));
 });
 
-test('upscale validates engine and skips H3 generation',()=>{
-  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'flashvsr'}),/engine/);
-  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'rtx'}),/engine/);
-  assert.throws(()=>buildUpscaleWorkflow({video:'old.mp4',engine:'seedvr2',targetResolution:720}),/resolution/);
-  const w=buildUpscaleWorkflow({video:'old.mp4',engine:'realesrgan',targetResolution:720});
-  assert.ok(!w.model&&!w.reference&&!w.sample);
-  assert.ok(!JSON.stringify(w).includes('FlashVSR'));
-  assert.ok(!JSON.stringify(w).includes('RTXVideoSuperResolution'));
+test('validates 32-bit seed and generation settings',()=>{
+  for(const seed of [-1,4294967296,1.5,NaN])assert.throws(()=>buildWorkflow({...base,seed}),/seed/);
+  assert.equal(buildWorkflow({...base,duration:20}).reference.inputs.length,481);
+  assert.throws(()=>buildWorkflow({...base,duration:21}));
 });

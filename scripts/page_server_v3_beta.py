@@ -22,11 +22,9 @@ class V3BetaHandler(base.KendoPageHandler):
         except OSError:
             error = None
         payload = json.dumps(dict(models_ready=models.files_ready(), base_models_ready=models.base_files_ready(),
-            upscale_models_ready=models.upscale_files_ready(),
-            fast_upscale_ready=models.fast_upscale_files_ready(),
-            quality_upscale_ready=models.quality_upscale_files_ready(), comfy_ready=self._comfy_ready(),
+            comfy_ready=self._comfy_ready(),
             download_error=error, downloaded_bytes=downloaded, total_bytes=total,
-            progress=round(downloaded * 100 / total, 1), version='3.0.0-beta.9')).encode()
+            progress=round(downloaded * 100 / total, 1), version='3.0.0-beta.10')).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
