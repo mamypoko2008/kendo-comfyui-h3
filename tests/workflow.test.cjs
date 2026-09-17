@@ -33,3 +33,8 @@ test('support all output resolution scales',()=>{
   const tall=buildWorkflow({...base,megapixels:Number(megapixels),ratio:'9:16'});assert.equal(tall.reference.inputs.width,height);assert.equal(tall.reference.inputs.height,width);
  }
 });
+test('uses an explicit 32-bit seed and rejects invalid seeds',()=>{
+ const w=buildWorkflow({...base,seed:2847193051});
+ assert.equal(w.noise.inputs.noise_seed,2847193051);
+ for(const seed of [-1,4294967296,1.5,NaN])assert.throws(()=>buildWorkflow({...base,seed}),/seed/);
+});

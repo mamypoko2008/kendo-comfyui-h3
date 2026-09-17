@@ -3,14 +3,14 @@ const $ = s => document.querySelector(s);
 const media = {image:[],video:[],audio:[]};
 const limits = {image:9,video:1,audio:3};
 const extensions = {image:/\.(png|jpe?g|webp)$/i,video:/\.(mp4|webm|mov)$/i,audio:/\.(wav|mp3|flac|ogg|m4a)$/i};
-let ready=false,submitting=false;
+let ready=false,submitting=false,lastSeed=null;
 const jobs=new Map();
 function notice(text){$('#notice').textContent=text}
 function updateButton(){$('#generate').disabled=!ready||submitting}
 function renderMedia(kind){
   $('#'+kind+'-count').textContent=`${media[kind].length} / ${limits[kind]}`;
   $('#'+kind+'-files').replaceChildren(...media[kind].map((item,index)=>{
-    const row=document.createElement('div');row.className='file';
+    const row=document.createElement('div');row.className='file '+kind;
     if(kind==='image'){const img=document.createElement('img');img.src=item.url;img.alt='ภาพ '+(index+1);row.append(img)}
     const name=document.createElement('span');name.textContent=item.file.name;
     const remove=document.createElement('button');remove.textContent='×';remove.setAttribute('aria-label','ลบ '+item.file.name);
@@ -35,6 +35,21 @@ for(const kind of Object.keys(media)){
 }
 for(const kind of ['video','audio'])$('#'+kind+'-enabled').onchange=()=>{$('#'+kind+'-body').hidden=!$('#'+kind+'-enabled').checked;renderTags()};
 $('#video-audio').onchange=renderTags;
+function randomSeed(){const values=new Uint32Array(1);crypto.getRandomValues(values);return values[0]}
+function validSeed(){const seed=Number($('#seed').value);return Number.isInteger(seed)&&seed>=0&&seed<=4294967295}
+function updateSeedControls(){
+  const locked=$('#seed-lock').checked;
+  $('#seed').disabled=!locked;$('#seed-randomize').disabled=!locked;
+  $('#seed-status').textContent=locked?'ล็อกอยู่ · งานถัดไปจะใช้ Seed นี้':'Auto · ระบบจะสุ่ม Seed ใหม่ทุกครั้ง';
+}
+function setLockedSeed(seed){
+  $('#seed').value=String(seed);$('#seed-lock').checked=true;updateSeedControls();$('#advanced').open=true;$('#seed').focus();
+}
+$('#seed').value=String(randomSeed());
+$('#seed-lock').onchange=()=>{if($('#seed-lock').checked&&!validSeed())$('#seed').value=String(randomSeed());updateSeedControls()};
+$('#seed-randomize').onclick=()=>{$('#seed').value=String(randomSeed());$('#seed').focus()};
+$('#reuse-latest-seed').onclick=()=>lastSeed!==null&&setLockedSeed(lastSeed);
+updateSeedControls();
 function updateDuration(){const seconds=Number($('#duration').value);$('#duration-value').textContent=`${seconds} วินาที`;$('#duration').setAttribute('aria-valuetext',`${seconds} วินาที`)}
 $('#duration').oninput=updateDuration;updateDuration();
 function setTheme(dark){document.documentElement.classList.toggle('dark',dark);$('#theme').textContent=dark?'โหมดสว่าง':'โหมดมืด';$('#theme').setAttribute('aria-pressed',String(dark));try{localStorage.setItem('kendo-theme',dark?'dark':'light')}catch{}}
@@ -51,18 +66,21 @@ function findVideo(value){if(!value||typeof value!=='object')return null;if(type
 function videoUrl(file){return '/api/comfy/view?'+new URLSearchParams({filename:file.filename,subfolder:file.subfolder||'',type:file.type||'output'})}
 function showVideo(url){$('#welcome').hidden=true;$('#preview video')?.remove();const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;$('#preview').append(v);$('#download').href=url;$('#download').hidden=false}
 function readHistory(){try{return JSON.parse(localStorage.getItem('kendo-h3-v2-history')||'[]')}catch{return []}}
-function renderHistory(){const history=readHistory();$('#history').replaceChildren(...history.map(item=>{const article=document.createElement('article'),v=document.createElement('video'),a=document.createElement('a');v.src=item.url;v.controls=true;v.preload='metadata';a.href=item.url;a.download='';a.textContent='↓ ดาวน์โหลด';article.append(v,a);return article}))}
-async function monitor(id){
-  try{const deadline=Date.now()+6*60*60*1000;while(Date.now()<deadline){await new Promise(r=>setTimeout(r,4000));let history;try{history=await api('/history/'+encodeURIComponent(id))}catch{continue}const entry=history[id];if(!entry)continue;if(entry.status?.status_str==='error')throw new Error('ComfyUI ประมวลผลไม่สำเร็จ ตรวจ Logs ที่พอร์ต 8188');const file=findVideo(entry.outputs);if(file){const url=videoUrl(file);showVideo(url);try{localStorage.setItem('kendo-h3-v2-history',JSON.stringify([{url},...readHistory()].slice(0,20)))}catch{}renderHistory();return}}throw new Error('หมดเวลาติดตามงาน ตรวจประวัติใน ComfyUI');
+function renderHistory(){const history=readHistory();$('#history').replaceChildren(...history.map(item=>{const article=document.createElement('article'),v=document.createElement('video'),actions=document.createElement('div'),a=document.createElement('a');v.src=item.url;v.controls=true;v.preload='metadata';actions.className='history-actions';a.href=item.url;a.download='';a.textContent='↓ ดาวน์โหลด';actions.append(a);if(Number.isInteger(item.seed)){const use=document.createElement('button');use.textContent='Seed '+item.seed+' · ใช้ต่อ';use.onclick=()=>setLockedSeed(item.seed);actions.append(use)}article.append(v,actions);return article}))}
+async function monitor(id,seed){
+  try{const deadline=Date.now()+6*60*60*1000;while(Date.now()<deadline){await new Promise(r=>setTimeout(r,4000));let history;try{history=await api('/history/'+encodeURIComponent(id))}catch{continue}const entry=history[id];if(!entry)continue;if(entry.status?.status_str==='error')throw new Error('ComfyUI ประมวลผลไม่สำเร็จ ตรวจ Logs ที่พอร์ต 8188');const file=findVideo(entry.outputs);if(file){const url=videoUrl(file);showVideo(url);try{localStorage.setItem('kendo-h3-v2-history',JSON.stringify([{url,seed},...readHistory()].slice(0,20)))}catch{}renderHistory();return}}throw new Error('หมดเวลาติดตามงาน ตรวจประวัติใน ComfyUI');
   }catch(e){notice(e.message)}finally{jobs.delete(id);$('#activity').textContent=jobs.size?`${jobs.size} งานในคิว`:'สิ้นสุดการติดตามงาน'}
 }
 async function generate(){
   if(!ready||submitting)return;
   const prompt=$('#prompt').value.trim();if(!prompt)return notice('กรุณากรอกคำอธิบายวิดีโอ');
+  if($('#seed-lock').checked&&!validSeed())return notice('Seed ต้องเป็นเลขจำนวนเต็ม 0–4,294,967,295');
+  const seed=$('#seed-lock').checked?Number($('#seed').value):randomSeed();
+  lastSeed=seed;$('#seed').value=String(seed);$('#reuse-latest-seed').hidden=false;$('#reuse-latest-seed').textContent='ใช้ Seed ล่าสุดต่อ · '+seed;
   const selected={images:media.image.map(x=>x.file),videos:$('#video-enabled').checked?media.video.map(x=>x.file):[],audios:$('#audio-enabled').checked?media.audio.map(x=>x.file):[]};
-  const settings={prompt,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),videoAudio:$('#video-audio').checked};
+  const settings={prompt,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),seed,videoAudio:$('#video-audio').checked};
   try{KendoWorkflow.buildWorkflow({...settings,images:[],videos:[],audios:[]})}catch(e){return notice(e.message)}
   submitting=true;updateButton();notice('กำลังอัปโหลดไฟล์…');
-  try{const names={};for(const [kind,files] of Object.entries(selected)){names[kind]=[];for(const file of files)names[kind].push(await upload(file))}const workflow=KendoWorkflow.buildWorkflow({...settings,...names});const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});if(!result.prompt_id)throw new Error('ไม่พบหมายเลขงาน');jobs.set(result.prompt_id,true);$('#activity').textContent=`${jobs.size} งานในคิว`;notice('ส่งเข้าคิวแล้ว สามารถเตรียมงานถัดไปได้');void monitor(result.prompt_id)}catch(e){notice(String(e.message))}finally{submitting=false;updateButton()}
+  try{const names={};for(const [kind,files] of Object.entries(selected)){names[kind]=[];for(const file of files)names[kind].push(await upload(file))}const workflow=KendoWorkflow.buildWorkflow({...settings,...names});const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});if(!result.prompt_id)throw new Error('ไม่พบหมายเลขงาน');jobs.set(result.prompt_id,true);$('#activity').textContent=`${jobs.size} งานในคิว`;notice('ส่งเข้าคิวแล้ว · Seed '+seed);void monitor(result.prompt_id,seed)}catch(e){notice(String(e.message))}finally{submitting=false;updateButton()}
 }
 $('#generate').onclick=generate;renderHistory();void systemStatus();setInterval(systemStatus,5000);

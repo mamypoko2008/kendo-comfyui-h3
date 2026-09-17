@@ -1,9 +1,10 @@
 /* Shared by the browser and dependency-free workflow tests. */
 (function (root) {
-  function buildWorkflow({prompt, ratio, megapixels, duration, steps, images = [], videos = [], audios = [], videoAudio = false}) {
+  function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), images = [], videos = [], audios = [], videoAudio = false}) {
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
     if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
+    if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw new Error('Invalid seed');
     const sizes = {'0.4':[864,480], '0.7':[1152,640], '1':[1376,768], '1.2':[1504,832], '1.5':[1632,928], '2':[1920,1088]};
     if (!sizes[String(megapixels)] || !['16:9','9:16','1:1'].includes(ratio)) throw new Error('Invalid resolution');
     let [width,height] = sizes[String(megapixels)];
@@ -18,7 +19,7 @@
       vae:n('VAELoader',{vae_name:'minimax_h3_video_vae_fp16.safetensors'}),
       audioVae:n('VAELoader',{vae_name:'minimax_h3_audio_vae_fp32.safetensors'}),
       reference:n('MiniMaxH3ReferenceToVideo',{prompt,width,height,length:frames,ref_image_size:'match',clip:['clip',0],vae:['vae',0],audio_vae:['audioVae',0]}),
-      noise:n('RandomNoise',{noise_seed:Math.floor(Math.random()*Number.MAX_SAFE_INTEGER)}),
+      noise:n('RandomNoise',{noise_seed:seed}),
       guider:n('BasicGuider',{model:['turbo',0],conditioning:['reference',0]}),
       sampler:n('KSamplerSelect',{sampler_name:'euler'}),
       schedule:n('BasicScheduler',{scheduler:'simple',steps,denoise:1,model:['turbo',0]}),
