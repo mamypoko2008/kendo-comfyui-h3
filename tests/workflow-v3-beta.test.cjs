@@ -4,7 +4,7 @@ const {buildWorkflow,REALISM_LORA,REALISM_TRIGGER}=require('../web/workflow-v3-b
 
 const base={prompt:'cinematic portrait',ratio:'16:9',megapixels:0.4,duration:5,steps:10,seed:123456789};
 
-test('v3 beta uses standard H3, stacked LoRAs and workflow-scoped KJ SageAttention',()=>{
+test('v3 beta uses standard H3 with stacked Turbo and Realism LoRAs',()=>{
   const w=buildWorkflow(base);
   assert.equal(w.model.class_type,'UNETLoader');
   assert.equal(w.turbo.class_type,'LoraLoaderModelOnly');
@@ -12,22 +12,20 @@ test('v3 beta uses standard H3, stacked LoRAs and workflow-scoped KJ SageAttenti
   assert.equal(w.realism.inputs.lora_name,REALISM_LORA);
   assert.equal(w.realism.inputs.strength_model,0.75);
   assert.deepEqual(w.realism.inputs.model,['turbo',0]);
-  assert.equal(w.sage.class_type,'PathchSageAttentionKJ');
-  assert.equal(w.sage.inputs.sage_attention,'auto');
-  assert.equal(w.sage.inputs.allow_compile,false);
-  assert.deepEqual(w.sage.inputs.model,['realism',0]);
-  assert.deepEqual(w.guider.inputs.model,['sage',0]);
-  assert.deepEqual(w.schedule.inputs.model,['sage',0]);
+  assert.ok(!w.sage);
+  assert.deepEqual(w.guider.inputs.model,['realism',0]);
+  assert.deepEqual(w.schedule.inputs.model,['realism',0]);
   assert.match(w.reference.inputs.prompt,new RegExp('^'+REALISM_TRIGGER+', '));
   assert.equal(w.noise.inputs.noise_seed,123456789);
-  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta10');
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_v3_beta11');
   assert.ok(!JSON.stringify(w).match(/Upscale|SeedVR2|RTXVideo|FlashVSR/));
 });
 
-test('Realism LoRA can be disabled without disabling Turbo or KJ SageAttention',()=>{
+test('Realism LoRA can be disabled while keeping the Turbo path',()=>{
   const w=buildWorkflow({...base,realismEnabled:false,realismWeight:0.75});
   assert.ok(!w.realism);
-  assert.deepEqual(w.sage.inputs.model,['turbo',0]);
+  assert.deepEqual(w.guider.inputs.model,['turbo',0]);
+  assert.deepEqual(w.schedule.inputs.model,['turbo',0]);
   assert.equal(w.reference.inputs.prompt,base.prompt);
 });
 

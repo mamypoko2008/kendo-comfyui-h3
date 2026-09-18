@@ -2,8 +2,8 @@
 import os
 
 MODEL_ROOT = os.environ.get('KENDO_MODEL_ROOT', '/workspace/runpod-slim/ComfyUI/models')
-READY_FILE = '/workspace/.kendo-h3-v3-beta10-models-ready'
-ERROR_FILE = '/workspace/.kendo-h3-v3-beta10-models-error'
+READY_FILE = '/workspace/.kendo-h3-v3-beta11-models-ready'
+ERROR_FILE = '/workspace/.kendo-h3-v3-beta11-models-error'
 H3_REPO = 'https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/'
 BASE_MODEL_SPECS = (
     ('diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors', 20970379616, H3_REPO + 'diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors'),

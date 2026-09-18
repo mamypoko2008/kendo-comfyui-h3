@@ -1,13 +1,9 @@
 # Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.10 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.11 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=0
-RUN git clone https://github.com/kijai/ComfyUI-KJNodes.git /opt/kendo/custom_nodes/ComfyUI-KJNodes \
-    && cd /opt/kendo/custom_nodes/ComfyUI-KJNodes \
-    && git checkout d3cfe21625e5170126ce06fbfcfe1d88108688c3 \
-    && python3.12 -m pip install --no-cache-dir -r requirements.txt
 COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh
 COPY scripts/page_server.py /opt/kendo/page_server_base.py

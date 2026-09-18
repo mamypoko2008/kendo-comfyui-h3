@@ -50,21 +50,21 @@ class V3BetaReadinessTest(unittest.TestCase):
                 conn.close()
                 self.assertTrue(result['models_ready'])
                 self.assertTrue(result['comfy_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.10')
+                self.assertEqual(result['version'], '3.0.0-beta.11')
             finally:
                 server.shutdown(); server.server_close()
 
-    def test_entrypoint_uses_kjnodes_and_removes_global_sage_flag(self):
+    def test_entrypoint_removes_kjnodes_and_global_sage_flag(self):
         root = Path(__file__).resolve().parents[1]
         script = (root / 'scripts' / 'entrypoint-v3-beta.sh').read_text()
         restore = script.index('cp -a "$baked_dir/." "$comfyui_dir/"')
-        link_target = script.index('for node_name in ComfyUI-KJNodes')
-        self.assertLess(restore, link_target)
         self.assertIn("sed -i '/^--use-sage-attention$/d'", script)
         self.assertIn('ComfyUI-SeedVR2_VideoUpscaler', script)
+        self.assertIn('ComfyUI-KJNodes', script)
         dockerfile = (root / 'Dockerfile.v3-beta').read_text()
-        self.assertIn('kijai/ComfyUI-KJNodes', dockerfile)
-        self.assertIn('d3cfe21625e5170126ce06fbfcfe1d88108688c3', dockerfile)
+        self.assertNotIn('kijai/ComfyUI-KJNodes', dockerfile)
+        workflow = (root / 'web' / 'workflow-v3-beta.js').read_text()
+        self.assertNotIn('PathchSageAttentionKJ', workflow)
         self.assertNotIn('numz/ComfyUI-SeedVR2', dockerfile)
 
 

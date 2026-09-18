@@ -4,10 +4,10 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 
 ## Release
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.10`
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.11`
 - Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
 - H3: standard ComfyUI Ref2VA INT8 graph with the full Ref2VA Turbo LoRA
-- Attention: explicit `Patch Sage Attention KJ` node (`auto`, compile disabled)
+- Attention: native ComfyUI attention; no KJ/SageAttention patch
 - Creative LoRA: fal Realism People, enabled by default at `0.75`
 - Default H3 steps: 10, adjustable
 - References: 9 images, 1 video, 3 audio clips
@@ -24,6 +24,15 @@ Separate beta release. Existing v1 and v2 images and RunPod templates remain unc
 H3 models, the Turbo LoRA, and the 131 MB Realism People LoRA download resumably and in parallel. Removed upscaler models are no longer downloaded.
 
 GPU generation and upscale still require live verification before the beta is promoted to a stable release.
+
+## beta.11 native attention
+
+- Removes the KJNodes dependency and `Patch Sage Attention KJ` workflow node.
+- Uses the standard ComfyUI H3 model path with native attention.
+- Keeps the full Turbo LoRA for the 10-step fast workflow.
+- Keeps fal Realism People LoRA enabled at weight 0.75 by default.
+- Removes persisted `--use-sage-attention` from reused v3 workspaces.
+- Keeps v1 and v2 unchanged.
 
 ## beta.10 clean generation stack
 

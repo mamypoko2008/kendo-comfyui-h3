@@ -1,4 +1,4 @@
-/* MiniMax H3 v3 beta: standard ComfyUI graph with explicit KJ SageAttention. */
+/* MiniMax H3 v3 beta: standard ComfyUI graph with Turbo + Realism LoRAs. */
 (function (root) {
   const REALISM_LORA = 'h3-realism-people-t2v-i2v-r2v.safetensors';
   const REALISM_TRIGGER = 'r34l1sm';
@@ -35,15 +35,14 @@
       audioVae:n('VAELoader',{vae_name:'minimax_h3_audio_vae_fp32.safetensors'}),
       reference:n('MiniMaxH3ReferenceToVideo',{prompt:conditionedPrompt,width,height,length:frames,ref_image_size:'match',clip:['clip',0],vae:['vae',0],audio_vae:['audioVae',0]}),
       noise:n('RandomNoise',{noise_seed:seed}),
-      sage:n('PathchSageAttentionKJ',{model:realismEnabled?['realism',0]:['turbo',0],sage_attention:'auto',allow_compile:false}),
-      guider:n('BasicGuider',{model:['sage',0],conditioning:['reference',0]}),
+      guider:n('BasicGuider',{model:realismEnabled?['realism',0]:['turbo',0],conditioning:['reference',0]}),
       sampler:n('KSamplerSelect',{sampler_name:'euler'}),
-      schedule:n('BasicScheduler',{scheduler:'simple',steps,denoise:1,model:['sage',0]}),
+      schedule:n('BasicScheduler',{scheduler:'simple',steps,denoise:1,model:realismEnabled?['realism',0]:['turbo',0]}),
       sample:n('SamplerCustomAdvanced',{noise:['noise',0],guider:['guider',0],sampler:['sampler',0],sigmas:['schedule',0],latent_image:['reference',1]}),
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta10',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3_beta11',format:'auto',codec:'auto',video:['video',0]})
     };
     if (realismEnabled) w.realism=n('LoraLoaderModelOnly',{lora_name:REALISM_LORA,strength_model:realismWeight,model:['turbo',0]});
     images.forEach((image,i)=>{w['image'+i]=n('LoadImage',{image});w.reference.inputs['ref_images.ref_image_'+i]=['image'+i,0]});
