@@ -2,7 +2,7 @@
   "name": "Kendo-ComfyUI-H3 Fast v2",
   "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v2.1.2",
   "category": "NVIDIA",
-  "containerDiskInGb": 30,
+  "containerDiskInGb": 100,
   "dockerEntrypoint": [],
   "dockerStartCmd": [],
   "volumeInGb": 100,
