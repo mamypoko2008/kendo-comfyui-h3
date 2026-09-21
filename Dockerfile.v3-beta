@@ -1,9 +1,28 @@
-# Reuse the tested CUDA/ComfyUI/SageAttention stack without rebuilding it.
+# v3 beta = the tested v2 stack (CUDA 13 / ComfyUI / SageAttention) plus an
+# in-Pod MCP server so Claude Desktop / Claude Code can drive generation.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.11 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.12 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
-    KENDO_ENABLE_SAGE=0
+    KENDO_ENABLE_SAGE=1 \
+    KENDO_MCP_PORT=3001
+
+# Pinned Node.js runtime for the MCP server; the base image ships none.
+ARG NODE_VERSION=22.23.2
+ARG NODE_SHA256=d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307
+RUN set -eux; \
+    aria2c --allow-overwrite=true --auto-file-renaming=false --dir=/tmp --out=node.tar.xz \
+      "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"; \
+    echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c -; \
+    mkdir -p /opt/node; \
+    tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1; \
+    rm /tmp/node.tar.xz; \
+    /opt/node/bin/node --version
+
+COPY mcp/package.json mcp/package-lock.json /opt/kendo-mcp/
+RUN cd /opt/kendo-mcp && /opt/node/bin/npm ci --omit=dev --no-audit --no-fund
+COPY mcp/server.mjs /opt/kendo-mcp/server.mjs
+
 COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh
 COPY scripts/page_server.py /opt/kendo/page_server_base.py
@@ -12,4 +31,5 @@ COPY web/v3-beta.html /opt/kendo-page/index.html
 COPY web/v3-beta.css web/v3-beta.js web/workflow-v3-beta.js /opt/kendo-page/
 COPY scripts/entrypoint-v3-beta.sh /opt/kendo/entrypoint-v3-beta.sh
 RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v3-beta.sh
+EXPOSE 3001
 ENTRYPOINT ["/opt/kendo/entrypoint-v3-beta.sh"]

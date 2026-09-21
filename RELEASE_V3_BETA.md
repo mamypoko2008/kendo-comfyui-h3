@@ -2,95 +2,79 @@
 
 Separate beta release. Existing v1 and v2 images and RunPod templates remain unchanged.
 
-## Release
+## beta.12 — v2 clone + Claude MCP
 
-- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.11`
-- Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack
-- H3: standard ComfyUI Ref2VA INT8 graph with the full Ref2VA Turbo LoRA
-- Attention: native ComfyUI attention; no KJ/SageAttention patch
-- Creative LoRA: fal Realism People, enabled by default at `0.75`
-- Default H3 steps: 10, adjustable
-- References: 9 images, 1 video, 3 audio clips
+beta.12 restarts the v3 line from the stable v2.1.2 stack. Everything that was
+specific to beta.5–beta.11 (Realism People LoRA, native-attention graph,
+upscalers, KJNodes) is gone; recover it from git history (`0993ccb`) if needed.
 
-## Interface
+### Generation stack (identical to v2.1.2)
 
-- Matches the current v2 layout, including responsive width, large image previews, seed locking, and prompt-free history.
-- Video Ref and Seed Lock are off by default.
-- The Realism People LoRA can be toggled and its weight adjusted from `0` to `2`.
-- When enabled, the recommended `r34l1sm` trigger is added internally without modifying the visible prompt.
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.12`
+- Base: tested v1.1.5 CUDA 13 / ComfyUI / SageAttention stack, `KENDO_ENABLE_SAGE=1`
+- H3: Ref2VA INT8 graph with the full Ref2VA Turbo LoRA, 10 steps default
+- References: 9 images, 1 video (off by default), 3 audio clips; seed Auto/Lock
+- Same Crimson UI, resizable controls, large thumbnails, prompt-free history
+- Clips are saved as `video/Kendo_H3_v3_*` so v2 and v3 outputs stay distinguishable
+- Readiness markers: `/workspace/.kendo-h3-v3-models-ready` / `-error`
+- Container disk: **100 GB** (same as v2); persistent volume 100 GB at `/workspace`
 
-## First launch
+### New: Claude MCP server (port 3001)
 
-H3 models, the Turbo LoRA, and the 131 MB Realism People LoRA download resumably and in parallel. Removed upscaler models are no longer downloaded.
+An MCP server (`mcp/server.mjs`, Node 22 pinned in the image) runs inside the
+Pod and exposes the Page's generation pipeline to Claude Desktop and Claude
+Code over Streamable HTTP:
 
-GPU generation and upscale still require live verification before the beta is promoted to a stable release.
+```
+https://POD_ID-3001.proxy.runpod.net/mcp/<access code>
+```
 
-## beta.11 native attention
+- The access code is `KENDO_MCP_CODE` from the template env, otherwise one is
+  generated on first boot and kept in `/workspace/.kendo-mcp-code` so the URL
+  survives restarts on the same volume. It is a self-made secret, not a paid token.
+- A wrong code answers **404** (never 401) so Claude does not try OAuth.
+- Stateless JSON responses; no SSE streams through the RunPod proxy.
+- The Page shows a **"เชื่อมต่อ Claude"** card with the URL, a copy button, and
+  the Claude Desktop / Claude Code steps (`/api/kendo/status` now returns
+  `mcp_url` and `mcp_ready`).
+- Tools: `kendo_status`, `kendo_list_references`, `kendo_upload_from_url`,
+  `kendo_generate`, `kendo_job_status`, `kendo_history`, `kendo_cancel`.
+- `kendo_upload_from_url` pulls public image/video/audio URLs (for example
+  results from an image generator) straight into ComfyUI's input folder;
+  private/loopback hosts are refused. Chat attachments cannot reach the Pod.
+- `kendo_generate` reuses `web/workflow-v3-beta.js`, so Claude and the Page
+  build the exact same graph. It returns a job id immediately; Claude polls
+  `kendo_job_status`, which returns a public `video_url` through port 3000.
+- Clips submitted by Claude are merged into the Page's history (seed only, no
+  prompt) by polling ComfyUI history every 20 s.
+- Page uploads now keep a readable name (`hero-front-3f9a1c.png`) so Claude can
+  tell references apart in `kendo_list_references`.
 
-- Removes the KJNodes dependency and `Patch Sage Attention KJ` workflow node.
-- Uses the standard ComfyUI H3 model path with native attention.
-- Keeps the full Turbo LoRA for the 10-step fast workflow.
-- Keeps fal Realism People LoRA enabled at weight 0.75 by default.
-- Removes persisted `--use-sage-attention` from reused v3 workspaces.
-- Keeps v1 and v2 unchanged.
+### Template changes
 
-## beta.10 clean generation stack
+- `runpod-v3-beta.json`: container disk 100 GB, `KENDO_ENABLE_SAGE=1`, new
+  port `3001/http`, readme lists the Claude MCP service.
+- Port labels to set in RunPod: 3000 `Page`, 3001 `Claude MCP`, 8188 `Comfy`,
+  8888 `JupyterLab`.
 
-- Removes the v3 upscaler UI, workflows, models, and SeedVR2 custom-node dependency.
-- Rebuilds generation from the known v2 graph with standard ComfyUI H3 nodes.
-- Adds pinned KJNodes v1.5.2 and applies SageAttention inside the workflow instead of the global launch flag.
-- Adds fal MiniMax H3 Realism People LoRA with a default weight of 0.75.
-- Restores the v2 interface, seed controls, larger attachment thumbnails, and default-off Video Ref.
-- Keeps v1 and v2 images/templates unchanged.
+### Tests
 
-## Published beta
+- `node --test tests/workflow.test.cjs tests/workflow-v3-beta.test.cjs tests/mcp-v3-beta.test.mjs`
+  (the MCP suite drives the server with the official MCP client against a mock ComfyUI)
+- `python -m unittest discover -s tests -v` (`tests/test_v3_beta.py` covers the
+  readiness endpoint and the `mcp_url` derivation)
+- `node tests/ui-v3-beta.cjs` (Playwright: Claude card, history merge, readable
+  upload names, plus every v2 assertion)
+- `npm ci` inside `mcp/` is required before the Node tests.
 
-- Repository commit: `492d1f1`
-- Release tag: `v3.0.0-beta.5`
-- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/34459711423
-- Image digest: `sha256:4f71e5cfccbcca95f4edf38d829e4ca16ba3b5e9727d1696dd47d3f29f226f0f`
-- RunPod template: `Kendo-ComfyUI-H3 Fast v3 beta`
-- RunPod template ID: `ok09ni9573`
-- Visibility: Public
-- Service names in the template README: Port 3000 `Page`, Port 8188 `Comfy`, Port 8888 `JupyterLab`
-- RunPod's Connect dialog controls the built-in `HTTP Service` button labels; custom per-port button labels are not part of the template API.
+GPU generation, the RunPod proxy path to port 3001, and the Claude Desktop
+custom-connector flow still require live verification on a real Pod before
+this beta is promoted.
 
-## beta.4 startup fix
+## Earlier betas (beta.5 – beta.11)
 
-The v3 wrapper now verifies that `ComfyUI/main.py` exists and restores the baked ComfyUI tree before linking the FlashVSR custom node. This repairs incomplete persistent volumes created by beta.3 while preserving downloaded models and user files.
-
-The public RunPod template now points to `v3.0.0-beta.4`. Existing Pods created from an earlier image must be redeployed to run beta.4.
-
-## beta.5 upscale workspace
-
-- Removes FlashVSR from the image and generated workflows.
-- An Upscale action selects its history clip and opens a dedicated workspace before any job is submitted.
-- Fast mode uses `RealESRGAN_x2plus.pth` for frame-based 2x upscaling.
-- Quality mode uses SeedVR2 3B FP8 with 1080p and 1440p targets, tiled VAE processing, CPU offload, and source-audio passthrough.
-- H3, Fast Upscale, and Quality Upscale readiness are independent. H3 generation and the 67 MB Fast model do not wait for the 3.89 GB SeedVR2 download.
-- The public v3 RunPod template now points to beta.5. Live GPU quality and performance still require verification before promotion to stable.
-
-## beta.6 SeedVR2 validation fix
-
-- Limits the SeedVR2 upscale seed to the node's supported unsigned 32-bit range (`0` to `4,294,967,295`).
-- Upscaling remains prompt-free; the fix prevents ComfyUI from rejecting the workflow before execution.
-
-## beta.7 NVIDIA RTX VSR
-
-- Adds the official RTX Video Super Resolution node as the default 2x upscaler at Ultra quality.
-- Keeps Real-ESRGAN and SeedVR2 selectable without changing their workflows.
-- Adds no startup model download; the NVIDIA VFX runtime is installed in the image.
-- Keeps v1, v2, and their RunPod templates unchanged.
-
-## beta.8 RTX DynamicCombo fix
-
-- Sends RTX VSR's ComfyUI v3 DynamicCombo as flat live-input keys: `resize_type` and `resize_type.scale`.
-- Fixes `RTXVideoSuperResolution.execute() missing ... resize_type` without changing the RTX node or other upscalers.
-- Adds a regression assertion for the exact API payload and keeps v1/v2 unchanged.
-
-## beta.9 RTX VSR removal
-
-- Removes the NVIDIA RTX VSR node, runtime dependency, workflow, and UI option after live RunPod testing reached upstream `NvVFX_Load` initialization error `-12`.
-- Restores Real-ESRGAN 2x as the default clip upscaler and keeps SeedVR2 as the quality option.
-- Cleans up only the old RTX symlink from persistent v3 workspaces; user-installed directories are preserved.
-- Keeps v1, v2, generation settings, reference limits, prompt-free history, and the standalone upscale workspace unchanged.
+Superseded and removed from the tree in beta.12. Summary for reference:
+beta.5 SeedVR2/Real-ESRGAN upscale workspace; beta.7–beta.8 NVIDIA RTX VSR;
+beta.9 RTX VSR removed after `NvVFX_Load` error `-12`; beta.10 upscalers removed,
+KJNodes SageAttention patch + fal Realism People LoRA; beta.11 native attention.
+Last published template image before beta.12: `v3.0.0-beta.11` (template `ok09ni9573`).

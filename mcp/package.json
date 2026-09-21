@@ -1,0 +1,16 @@
+{
+  "name": "kendo-h3-mcp",
+  "version": "3.0.0-beta.12",
+  "private": true,
+  "description": "MCP server that lets Claude drive Kendo MiniMax H3 generation inside the Pod",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.6.5"
+  }
+}

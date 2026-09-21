@@ -2,6 +2,17 @@
 
 One-click RunPod image for MiniMax H3 on RTX 5090 and RTX PRO 6000 Blackwell.
 
+## Releases
+
+| Line | Files | Notes |
+|---|---|---|
+| v1 | `Dockerfile`, `web/index.html`, `scripts/entrypoint.sh` | Original image; see below |
+| v2 (stable) | `Dockerfile.v2`, `web/v2.*`, `scripts/*_v2*`, [RELEASE_V2.md](RELEASE_V2.md) | Ref2VA Turbo studio |
+| v3 beta | `Dockerfile.v3-beta`, `web/v3-beta.*`, `mcp/`, [RELEASE_V3_BETA.md](RELEASE_V3_BETA.md) | v2 clone + in-Pod Claude MCP server on port 3001; student guide in [CLAUDE_CONNECT_TH.md](CLAUDE_CONNECT_TH.md) |
+
+Each line has its own GitHub Actions workflow triggered by its tag pattern
+(`v2.*`, `v3.*-beta.*`) and its own RunPod template JSON. Change one line at a time.
+
 ## Included
 
 - RunPod ComfyUI CUDA 13 base, pinned to `runpod/comfyui:1.4.4-cuda13.0`

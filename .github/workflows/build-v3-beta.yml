@@ -16,7 +16,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/workflow.test.cjs tests/workflow-v3-beta.test.cjs
+      - run: npm ci --no-audit --no-fund
+        working-directory: mcp
+      - run: node --test tests/workflow.test.cjs tests/workflow-v3-beta.test.cjs tests/mcp-v3-beta.test.mjs
       - run: python -m unittest discover -s tests -v
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3

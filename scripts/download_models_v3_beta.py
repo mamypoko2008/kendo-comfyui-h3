@@ -5,13 +5,13 @@ import os
 from pathlib import Path
 import subprocess
 import time
-from models_v3_beta import MODEL_ROOT, MODEL_SPECS, READY_FILE, ERROR_FILE
+from models_v3_beta import MODEL_ROOT, MODEL_SPECS, REPO, READY_FILE, ERROR_FILE
 
-def download(relative, expected, url):
+def download(relative, expected):
     target = Path(MODEL_ROOT, relative)
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.is_file() and target.stat().st_size == expected:
-        print('[KENDO v3 beta.11] Reusing ' + relative, flush=True)
+        print('[KENDO v3 beta] Reusing ' + relative, flush=True)
         return
     if target.exists():
         target.rename(str(target) + '.incomplete.' + str(time.time_ns()))
@@ -22,12 +22,12 @@ def download(relative, expected, url):
         '--file-allocation=none', '--max-tries=20', '--retry-wait=5', '--connect-timeout=30',
         '--timeout=60', '--min-split-size=16M', '--summary-interval=5',
         '--max-connection-per-server=' + connections, '--split=' + connections,
-        '--dir=' + str(target.parent), '--out=' + partial.name, url + '?download=true'
+        '--dir=' + str(target.parent), '--out=' + partial.name, REPO + relative + '?download=true'
     ], check=True)
     if partial.stat().st_size != expected:
         raise RuntimeError('Incorrect size: ' + relative)
     partial.replace(target)
-    print('[KENDO v3 beta.11] Ready ' + relative, flush=True)
+    print('[KENDO v3 beta] Ready ' + relative, flush=True)
 
 def main():
     # Share v1's lock because both releases reuse encoder/VAE paths.
@@ -36,12 +36,11 @@ def main():
         Path(READY_FILE).unlink(missing_ok=True)
         Path(ERROR_FILE).unlink(missing_ok=True)
         try:
-            workers = max(1, min(6, int(os.environ.get('KENDO_MODEL_DOWNLOAD_WORKERS', '4'))))
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
                 futures = [pool.submit(download, *spec) for spec in MODEL_SPECS]
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
-            Path(READY_FILE).write_text('v3 beta.11 ready\n')
+            Path(READY_FILE).write_text('v3 beta ready\n')
         except Exception as error:
             Path(ERROR_FILE).write_text(str(error))
             raise

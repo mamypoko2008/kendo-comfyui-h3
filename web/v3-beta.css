@@ -121,10 +121,11 @@ progress { width: 100%; accent-color: var(--red); margin-top: 12px; }
   .history { grid-template-columns: 1fr; }
   #image-files { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
-.lora-card { padding: 12px; border: 1px solid color-mix(in srgb, var(--red) 25%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--soft) 45%, var(--panel)); }
-.lora-card .row > div { display: grid; gap: 2px; }
-.lora-card .row small { margin-left: 0; }
-.lora-switch { display: flex; align-items: center; gap: 6px; color: var(--text); white-space: nowrap; }
-.lora-weight { display: grid; grid-template-columns: 1fr 92px; align-items: center; gap: 8px; margin-top: 11px; color: var(--text); }
-#realism-weight { width: 92px; }
+/* v3 beta: Claude connection card */
+.claude { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; background: var(--panel); }
+.claude .row small { display: block; margin-left: 0; margin-top: 2px; }
+.claude-url { display: flex; gap: 8px; margin-top: 10px; }
+.claude-url input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 9px; border-radius: 8px; font: 12px ui-monospace, monospace; }
+.claude ol { margin: 10px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.7; }
+.claude code { font: 12px ui-monospace, monospace; background: var(--bg); padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .claude-url { flex-direction: column; } }

@@ -1,14 +1,15 @@
 {
   "name": "Kendo-ComfyUI-H3 Fast v3 beta",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.11",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.12",
   "category": "NVIDIA",
-  "containerDiskInGb": 30,
+  "containerDiskInGb": 100,
   "dockerEntrypoint": [],
   "dockerStartCmd": [],
   "volumeInGb": 100,
   "volumeMountPath": "/workspace",
   "ports": [
     "3000/http",
+    "3001/http",
     "8188/http",
     "8888/http",
     "22/tcp",
@@ -17,10 +18,9 @@
   "isPublic": true,
   "isServerless": false,
   "env": {
-    "KENDO_ENABLE_SAGE": "0",
+    "KENDO_ENABLE_SAGE": "1",
     "KENDO_AUTO_DOWNLOAD_MODELS": "1",
-    "KENDO_WAIT_FOR_MODELS": "0",
-    "KENDO_MODEL_DOWNLOAD_WORKERS": "4"
+    "KENDO_WAIT_FOR_MODELS": "0"
   },
-  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.11 using the standard ComfyUI H3 graph and native attention without KJNodes or SageAttention. Includes the fal Realism People LoRA enabled at weight 0.75 by default, seed locking, 9 image references, 1 optional video reference, and 3 optional audio references. Existing v1/v2 releases remain unchanged."
+  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Claude MCP** — Port `3001` (open the Page and copy the Claude connection URL)\n- **Comfy** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 Ref2VA Turbo studio v3 beta.12: the v2 generation stack (SageAttention, Turbo LoRA, 9 image / 1 video / 3 audio references, seed lock) plus an in-Pod MCP server so Claude Desktop or Claude Code can upload references from URLs and generate videos through chat. Models download in parallel with resume support to /workspace on first launch. Existing v1/v2 releases remain unchanged."
 }
