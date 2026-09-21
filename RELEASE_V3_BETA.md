@@ -53,7 +53,8 @@ https://POD_ID-3001.proxy.runpod.net/mcp/<access code>
 ### Template changes
 
 - `runpod-v3-beta.json`: container disk 100 GB, `KENDO_ENABLE_SAGE=1`, new
-  port `3001/http`, readme lists the Claude MCP service.
+  port `3001/http`, readme lists the Claude MCP service. Ports follow the live
+  template (`22/udp` was never on the v3 template).
 - Port labels to set in RunPod: 3000 `Page`, 3001 `Claude MCP`, 8188 `Comfy`,
   8888 `JupyterLab`.
 
@@ -66,6 +67,12 @@ https://POD_ID-3001.proxy.runpod.net/mcp/<access code>
 - `node tests/ui-v3-beta.cjs` (Playwright: Claude card, history merge, readable
   upload names, plus every v2 assertion)
 - `npm ci` inside `mcp/` is required before the Node tests.
+
+### Published
+
+- Commits: `6791469` (rebuild) + `945aca3` (Node on PATH); tag `v3.0.0-beta.12`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/35637570770 (Node, MCP and Python tests passed; image pushed)
+- RunPod template `ok09ni9573` updated via REST API on 2026-09-22: image `v3.0.0-beta.12`, disk 100 GB, Sage on, port 3001 added; v2 template `1ncfofsbzx` verified unchanged.
 
 GPU generation, the RunPod proxy path to port 3001, and the Claude Desktop
 custom-connector flow still require live verification on a real Pod before

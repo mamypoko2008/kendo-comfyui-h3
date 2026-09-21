@@ -12,8 +12,7 @@
     "3001/http",
     "8188/http",
     "8888/http",
-    "22/tcp",
-    "22/udp"
+    "22/tcp"
   ],
   "isPublic": true,
   "isServerless": false,
