@@ -18,6 +18,8 @@ RUN set -eux; \
     tar -xJf /tmp/node.tar.xz -C /opt/node --strip-components=1; \
     rm /tmp/node.tar.xz; \
     /opt/node/bin/node --version
+# npm's shebang resolves `node` through PATH.
+ENV PATH=/opt/node/bin:$PATH
 
 COPY mcp/package.json mcp/package-lock.json /opt/kendo-mcp/
 RUN cd /opt/kendo-mcp && /opt/node/bin/npm ci --omit=dev --no-audit --no-fund
