@@ -2,7 +2,13 @@
 
 V4 ต่อจากการสร้างคลิป MiniMax H3 ใน V3 และเพิ่มเมนู **อัพสเกล** โดยใช้ LTX-2.5 Refine Details / Tiled Fusion จาก workflow ที่แนบ
 
-สถานะ: โค้ดและการทดสอบในเครื่องผ่านแล้ว ยังไม่ได้ build/publish Docker image และยังไม่ได้ทดสอบ inference บน GPU จริง จึงยังไม่ถือเป็น release ที่ยืนยันคุณภาพ/เวลา/VRAM แล้ว
+สถานะ: เผยแพร่ Docker image และสร้าง RunPod template V4 แล้วเมื่อ 6 ตุลาคม 2026 การทดสอบโค้ดผ่านในเครื่องและ GitHub แต่ยังไม่ได้ทดสอบ inference บน GPU จริง จึงยังไม่ยืนยันคุณภาพ/เวลา/VRAM
+
+เปิด [RunPod Template V4](https://console.runpod.io/hub/template/wjvnqxv5md) · Template ID `wjvnqxv5md`
+
+Image digest: `sha256:0c67edf08fd1052f7f31177af2946216ea94e91111e08655992d8be677a460c7`
+
+ตรวจ public registry แล้วว่าเป็นเวอร์ชัน `4.0.0-beta.1` และใช้ entrypoint V4 ตรวจค่าที่ RunPod บันทึกแล้ว และยืนยันว่า template V2/V3 มีค่าเดิม
 
 ## การใช้งาน
 
@@ -39,7 +45,7 @@ SHA256: `773f258bead45dfd8af68f89e63ca659a58688230bce17f2d93df4819a4b53ea`
 
 - Dockerfile: `Dockerfile.v4`
 - Template configuration: `runpod-v4.json` ชื่อ **Kendo-ComfyUI-H3 V4**
-- Image tag ที่เตรียมไว้: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1` **ยังไม่ publish**
+- Image ที่เผยแพร่แล้ว: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1`
 - GitHub Actions: `.github/workflows/build-v4.yml` สั่ง workflow_dispatch หรือ tag `v4.*`
 - พอร์ตหน้าเว็บ 3000, MCP 3001, ComfyUI 8188
 - Persistent volume แยก V4 200 GB; โมเดล H3 ประมาณ 44 GB และ LTX ประมาณ 71 GB รวมราว 115 GB ก่อนไฟล์งาน

@@ -1,0 +1,19 @@
+{
+  "id": "wjvnqxv5md",
+  "name": "Kendo-ComfyUI-H3 V4",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1",
+  "containerDiskInGb": 100,
+  "volumeInGb": 200,
+  "volumeMountPath": "/workspace",
+  "ports": [
+    "3000/http",
+    "3001/http",
+    "8188/http",
+    "8888/http",
+    "22/tcp"
+  ],
+  "isPublic": true,
+  "imageDigest": "sha256:0c67edf08fd1052f7f31177af2946216ea94e91111e08655992d8be677a460c7",
+  "templateUrl": "https://console.runpod.io/hub/template/wjvnqxv5md",
+  "gpuInferenceValidated": false
+}
