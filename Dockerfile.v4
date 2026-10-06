@@ -1,0 +1,41 @@
+# V4: keep the H3 generation stack, add the pinned official LTX refiner.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.13
+ARG COMFYUI_COMMIT=7a5dad695fe1cae25efcb2550530fb20ef68da3d
+ARG LTXVIDEO_COMMIT=3bf3ca62595f1764c47d01c35c8e5dfe47e1a88f
+ENV KENDO_IMAGE_VERSION=4.0.0-beta.1 \
+    KENDO_AUTO_DOWNLOAD_MODELS=1 \
+    KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_WORKFLOW_FILE=/opt/kendo-page/workflow-v4.js \
+    KENDO_UPSCALE_MAX_SECONDS=60 \
+    KENDO_MCP_HOST=0.0.0.0 \
+    KENDO_COMFY_LOG_FILE=/workspace/comfyui.log
+COPY mcp/package.json mcp/package-lock.json /opt/kendo-mcp/
+RUN cd /opt/kendo-mcp && /opt/node/bin/npm ci --omit=dev --no-audit --no-fund
+RUN set -eux; \
+    git clone https://github.com/Comfy-Org/ComfyUI.git /tmp/comfy-v4; \
+    git -C /tmp/comfy-v4 checkout "${COMFYUI_COMMIT}"; \
+    cp -a /opt/comfyui-baked/custom_nodes/. /tmp/comfy-v4/custom_nodes/; \
+    if [ -d /opt/comfyui-baked/user ]; then cp -a /opt/comfyui-baked/user /tmp/comfy-v4/; fi; \
+    rm -rf /opt/comfyui-baked; \
+    mv /tmp/comfy-v4 /opt/comfyui-baked; \
+    git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git /opt/comfyui-baked/custom_nodes/ComfyUI-LTXVideo; \
+    git -C /opt/comfyui-baked/custom_nodes/ComfyUI-LTXVideo checkout "${LTXVIDEO_COMMIT}"; \
+    python3.12 -m pip install --no-cache-dir -r /opt/comfyui-baked/requirements.txt; \
+    python3.12 -m pip install --no-cache-dir -r /opt/comfyui-baked/custom_nodes/ComfyUI-LTXVideo/requirements.txt; \
+    printf '%s\n' "${COMFYUI_COMMIT}" > /opt/comfyui-baked/.kendo-v4-core
+COPY custom_nodes/kendo_v4 /opt/comfyui-baked/custom_nodes/kendo_v4/
+COPY custom_nodes/kendo_v4/media_v4.py /opt/kendo/
+COPY scripts/models_v4.py scripts/ltx_models_v4.py scripts/models_v3_beta.py scripts/page_server_v3_beta.py scripts/upscale_workflow_v4.py scripts/download_models_v4.py /opt/kendo/
+COPY scripts/page_server.py /opt/kendo/page_server_base.py
+COPY scripts/page_server_v4.py /opt/kendo/page_server.py
+COPY scripts/download-v4.sh /opt/kendo/download-models.sh
+COPY scripts/entrypoint-v4.sh /opt/kendo/entrypoint-v4.sh
+COPY web/v4.html /opt/kendo-page/index.html
+COPY web/v4.html web/v4.css web/v4.js web/workflow-v4.js web/upscale-link-v4.js web/files-v4.html web/files-v4.js web/upscale.html web/upscale-v4.css web/upscale-v4.js /opt/kendo-page/
+COPY workflows/LTX-2.5_V2V_TiledFusion_Upscale.json /opt/comfyui-baked/user/default/workflows/
+COPY mcp/server-v4.mjs /opt/kendo-mcp/server.mjs
+COPY mcp/kie-client.mjs mcp/kie-tools.mjs /opt/kendo-mcp/
+RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v4.sh; \
+    python3.12 -m compileall -q /opt/kendo /opt/comfyui-baked/custom_nodes/kendo_v4
+EXPOSE 3000 3001 8188
+ENTRYPOINT ["/opt/kendo/entrypoint-v4.sh"]

@@ -1,0 +1,21 @@
+{
+  "name": "Kendo-ComfyUI-H3 V4",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1",
+  "category": "NVIDIA",
+  "containerDiskInGb": 100,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 200,
+  "volumeMountPath": "/workspace",
+  "ports": ["3000/http", "3001/http", "8188/http", "8888/http", "22/tcp"],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "1",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MCP_HOST": "0.0.0.0",
+    "KENDO_UPSCALE_MAX_SECONDS": "60"
+  },
+  "readme": "Kendo Studio V4: MiniMax H3 generation plus a separate Upscale page using LTX 2.5 Refine Details/Tiled Fusion. Select a completed clip or a file from the generated-files page, or upload MP4/MOV/WebM. Aspect ratio is read from the source. 1080p/4K output keeps source frame count/fps/audio; no before/after comparison. Use a separate V4 persistent volume (200 GB). Accept Lightricks model access on Hugging Face and set HF_TOKEN in the Pod environment before first download. Services: Page 3000, MCP 3001, ComfyUI 8188, JupyterLab 8888. This configuration requires publishing the V4 image before launching."
+}

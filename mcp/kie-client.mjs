@@ -1,0 +1,200 @@
+// Shared by the Studio HTTP API and the existing Kendo MCP tools.
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+
+export const IMAGE_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9'];
+export const VIDEO_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'];
+export const MODELS = { image: 'seedream/5-pro-text-to-image', imageReference: 'seedream/5-pro-image-to-image', video: 'bytedance/seedance-2-5' };
+const VIDEO_RATES = { '480p': .14, '720p': .315, '1080p': .79 };
+export class KieError extends Error {
+  constructor(message, status = 400) { super(message); this.status = status; }
+}
+function choose(value, options, label) {
+  if (!options.includes(value)) throw new KieError(`Invalid ${label}`);
+  return value;
+}
+export function publicUrl(value) {
+  let url;
+  try { url = new URL(value); } catch { throw new KieError('Invalid image URL'); }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (url.protocol !== 'https:' || url.username || url.password || host === 'localhost' || host.endsWith('.localhost') || host.includes(':') || /^(0|10|127|169\.254|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(host)) throw new KieError('Use a public HTTPS image URL');
+  return url.href;
+}
+export function buildKiePayload(args = {}) {
+  const kind = choose(args.kind, ['image', 'video'], 'kind');
+  const prompt = typeof args.prompt === 'string' ? args.prompt.trim() : '';
+  if (!prompt || prompt.length > (kind === 'image' ? 5000 : 30000)) throw new KieError(`Prompt must contain 1-${kind === 'image' ? 5000 : 30000} characters`);
+  const references = args.reference_urls ?? [];
+  if (!Array.isArray(references) || references.length > (kind === 'image' ? 10 : 30)) throw new KieError(`Maximum ${kind === 'image' ? 10 : 30} image references`);
+  const urls = references.map(publicUrl);
+  const input = { prompt, aspect_ratio: choose(args.ratio ?? '16:9', kind === 'image' ? IMAGE_RATIOS : VIDEO_RATIOS, 'aspect ratio') };
+  let estimate;
+  if (kind === 'image') {
+    input.quality = choose(args.quality ?? 'basic', ['basic', 'high'], 'quality');
+    input.output_format = choose(args.output_format ?? 'png', ['png', 'jpeg'], 'output format');
+    input.nsfw_checker = true;
+    if (urls.length) input.image_urls = urls;
+    estimate = (input.quality === 'high' ? .07 : .035) + Math.max(0, urls.length - 1) * .0025;
+  } else {
+    input.resolution = choose(args.resolution ?? '720p', Object.keys(VIDEO_RATES), 'resolution');
+    input.duration = args.duration ?? 10;
+    if (!Number.isInteger(input.duration) || input.duration < 4 || input.duration > 30) throw new KieError('Duration must be an integer from 4 to 30 seconds');
+    if (args.generate_audio !== undefined && typeof args.generate_audio !== 'boolean') throw new KieError('generate_audio must be boolean');
+    input.generate_audio = args.generate_audio ?? true;
+    input.output_format = 'mp4';
+    if (urls.length) input.reference_image_urls = urls;
+    estimate = VIDEO_RATES[input.resolution] * input.duration;
+  }
+  return { payload: { model: kind === 'image' ? (urls.length ? MODELS.imageReference : MODELS.image) : MODELS.video, input }, estimate_usd: Number(estimate.toFixed(4)), kind };
+}
+
+export function createKieService(options = {}) {
+  const fetcher = options.fetchImpl ?? fetch;
+  const dataDir = options.dataDir ?? process.env.KENDO_KIE_DATA_DIR ?? path.resolve('..', '.kendo-kie');
+  const apiBase = options.apiBase ?? 'https://api.kie.ai';
+  const uploadUrl = options.uploadUrl ?? 'https://kieai.redpandaai.co/api/file-stream-upload';
+  const key = () => (options.apiKey ?? process.env.KIE_API_KEY ?? '').trim();
+  const inProgress = new Map();
+  const pendingSubmissions = new Map();
+  const jobsDir = path.join(dataDir, 'jobs');
+  const resultsDir = path.join(dataDir, 'results');
+  function taskId(value) {
+    if (typeof value !== 'string' || !/^[\w-]{1,180}$/.test(value)) throw new KieError('Invalid task ID');
+    return value;
+  }
+  async function request(url, init = {}) {
+    if (!key()) throw new KieError('KIE_API_KEY is not configured on the server', 503);
+    let response;
+    try { response = await fetcher(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${key()}` }, redirect: 'error', signal: AbortSignal.timeout(120000) }); }
+    catch { throw new KieError('KIE connection failed. Do not resubmit a generation automatically; check the KIE task logs first.', 502); }
+    let body;
+    try { body = await response.json(); } catch { throw new KieError('KIE returned an invalid response', 502); }
+    if (!response.ok || body.code !== 200 || body.success === false) {
+      // Never return upstream messages that might echo credentials or request bodies.
+      throw new KieError(`KIE rejected the request (HTTP ${response.status}, code ${Number(body.code) || 'unknown'}). Check KIE Logs.`, response.status === 401 ? 401 : 502);
+    }
+    return body.data ?? {};
+  }
+  async function saveJob(job) {
+    await fs.mkdir(jobsDir, { recursive: true });
+    const target = path.join(jobsDir, taskId(job.task_id) + '.json');
+    const temporary = target + '.' + crypto.randomUUID() + '.tmp';
+    await fs.writeFile(temporary, JSON.stringify(job));
+    await fs.rename(temporary, target);
+    return job;
+  }
+  async function readJob(id) {
+    try { return JSON.parse(await fs.readFile(path.join(jobsDir, taskId(id) + '.json'), 'utf8')); }
+    catch (e) { if (e instanceof KieError) throw e; throw new KieError('Task is not in this Studio history', 404); }
+  }
+  async function history() {
+    let names;
+    try { names = await fs.readdir(jobsDir); } catch { return []; }
+    const jobs = [];
+    for (const name of names.filter(name => /^[\w-]+\.json$/.test(name))) {
+      try { jobs.push(JSON.parse(await fs.readFile(path.join(jobsDir, name), 'utf8'))); } catch {}
+    }
+    return jobs.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 100);
+  }
+  async function submit(args) {
+    const built = buildKiePayload(args);
+    const requestId = args.request_id;
+    if (typeof requestId !== 'string' || !/^[\w-]{8,100}$/.test(requestId)) throw new KieError('A stable request_id is required to prevent duplicate paid requests');
+    const hash = crypto.createHash('sha256').update(JSON.stringify(built.payload)).digest('hex');
+    const run = async () => {
+      await fs.mkdir(path.join(dataDir, 'requests'), { recursive: true });
+      const receipt = path.join(dataDir, 'requests', requestId + '.json');
+      // Exclusive durable receipt protects against duplicate browser/MCP calls and restarts.
+      try { await fs.writeFile(receipt, JSON.stringify({ hash, state: 'submitting' }), { flag: 'wx' }); }
+      catch (e) {
+        if (e.code !== 'EEXIST') throw e;
+        const previous = JSON.parse(await fs.readFile(receipt, 'utf8'));
+        if (previous.hash !== hash) throw new KieError('request_id was already used with different settings', 409);
+        if (previous.task_id) return readJob(previous.task_id);
+        throw new KieError('This request may already have been sent. Check KIE Logs before creating another request.', 409);
+      }
+      if (!key()) { await fs.unlink(receipt); throw new KieError('KIE_API_KEY is not configured on the server', 503); }
+      const data = await request(apiBase + '/api/v1/jobs/createTask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(built.payload) });
+      const id = taskId(data.taskId);
+      // Record the provider ID before any other persistence to recover after local write failures.
+      await fs.writeFile(receipt, JSON.stringify({ hash, task_id: id, state: 'submitted' }));
+      return saveJob({ task_id: id, request_id: requestId, kind: built.kind, model: built.payload.model, state: 'waiting', estimate_usd: built.estimate_usd, created_at: new Date().toISOString(), result_urls: [], remote_urls: [] });
+    };
+    if (!pendingSubmissions.has(requestId)) pendingSubmissions.set(requestId, run().finally(() => pendingSubmissions.delete(requestId)));
+    return pendingSubmissions.get(requestId);
+  }
+  async function uploadImage(buffer, mime, name = 'reference') {
+    if (!Buffer.isBuffer(buffer) || !buffer.length || buffer.length > 30 * 1024 * 1024) throw new KieError('Image must be between 1 byte and 30 MB');
+    const extension = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[mime];
+    const png = buffer.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'));
+    const jpg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const webp = buffer.subarray(0, 4).toString() === 'RIFF' && buffer.subarray(8, 12).toString() === 'WEBP';
+    if (!extension || !({ 'image/png': png, 'image/jpeg': jpg, 'image/webp': webp }[mime])) throw new KieError('Use a valid PNG, JPG or WEBP image');
+    const fileName = (name.replace(/[^\w-]/g, '-').slice(0, 35) || 'reference') + '-' + crypto.randomUUID() + '.' + extension;
+    const form = new FormData();
+    form.append('file', new Blob([buffer], { type: mime }), fileName);
+    form.append('uploadPath', 'images/kendo-studio');
+    form.append('fileName', fileName);
+    const data = await request(uploadUrl, { method: 'POST', body: form });
+    return { url: publicUrl(data.downloadUrl) };
+  }
+  async function downloadResult(url, id, index, kind) {
+    publicUrl(url);
+    const response = await fetcher(url, { redirect: 'error', signal: AbortSignal.timeout(180000) });
+    if (!response.ok || !response.body) throw new KieError('Result download failed; use the original KIE URL to download now', 502);
+    const mime = (response.headers.get('content-type') ?? '').split(';')[0];
+    const extension = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/quicktime': 'mov' }[mime];
+    if (!extension || (kind === 'image' && !mime.startsWith('image/')) || (kind === 'video' && !mime.startsWith('video/'))) throw new KieError('Unexpected result file type', 502);
+    const filename = `result-${index + 1}.${extension}`;
+    const folder = path.join(resultsDir, id);
+    await fs.mkdir(folder, { recursive: true });
+    const destination = path.join(folder, filename);
+    const temporary = destination + '.' + crypto.randomUUID() + '.part';
+    const handle = await fs.open(temporary, 'wx');
+    let bytes = 0;
+    try {
+      for await (const chunk of response.body) {
+        bytes += chunk.length;
+        if (bytes > 300 * 1024 * 1024) throw new KieError('Result exceeds 300 MB', 502);
+        await handle.write(chunk);
+      }
+      if (!bytes) throw new KieError('Empty result file', 502);
+      await handle.close();
+      await fs.rename(temporary, destination);
+    } catch (error) { await handle.close().catch(() => {}); await fs.unlink(temporary).catch(() => {}); throw error; }
+    return `/api/kie/results/${encodeURIComponent(id)}/${filename}`;
+  }
+  async function refreshJob(id) {
+    const job = await readJob(id);
+    if (job.state === 'success' && job.result_urls.length || job.state === 'fail') return job;
+    const data = await request(apiBase + '/api/v1/jobs/recordInfo?taskId=' + encodeURIComponent(id));
+    job.state = data.state ?? 'waiting';
+    if (job.state === 'fail') job.error = 'KIE generation failed. Check the task in KIE Logs.';
+    if (job.state === 'success') {
+      let result;
+      try { result = typeof data.resultJson === 'string' ? JSON.parse(data.resultJson) : data.resultJson; }
+      catch { throw new KieError('KIE returned invalid result data', 502); }
+      if (!Array.isArray(result?.resultUrls) || !result.resultUrls.length) throw new KieError('KIE completed the task without a result URL', 502);
+      job.remote_urls = result.resultUrls.map(publicUrl);
+      job.result_urls = [];
+      try {
+        for (const [index, url] of job.remote_urls.entries()) job.result_urls.push(await downloadResult(url, id, index, job.kind));
+        delete job.download_error;
+      } catch { job.download_error = 'Could not save the result locally. Download from the KIE result URL before it expires.'; }
+    }
+    return saveJob(job);
+  }
+  function getJob(id) {
+    taskId(id);
+    if (!inProgress.has(id)) inProgress.set(id, refreshJob(id).finally(() => inProgress.delete(id)));
+    return inProgress.get(id);
+  }
+  async function resultFile(id, filename) {
+    taskId(id);
+    if (!/^result-\d+\.(png|jpg|webp|mp4|mov)$/.test(filename)) throw new KieError('Invalid result filename', 404);
+    await readJob(id);
+    return path.join(resultsDir, id, filename);
+  }
+  return { configured: () => Boolean(key()), submit, uploadImage, getJob, history, resultFile };
+}

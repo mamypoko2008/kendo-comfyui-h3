@@ -3,3 +3,6 @@
 Dockerfile text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+Dockerfile.v4 text eol=lf
+Dockerfile.v4.dockerignore text eol=lf
+workflows/LTX-2.5_V2V_TiledFusion_Upscale.json -text
