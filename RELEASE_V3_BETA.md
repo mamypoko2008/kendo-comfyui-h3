@@ -85,6 +85,9 @@ https://POD_ID-3001.proxy.runpod.net/mcp/<access code>
 
 ### Published
 
+- Commit: `4ec6b68`; tag `v3.0.0-beta.13`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37451331195 (all tests passed; image pushed)
+- Runpod template `ok09ni9573` updated on 2026-10-06: image `v3.0.0-beta.13`, public MCP on `0.0.0.0:3001`, disk/volume 100 GB, and public visibility preserved. The obsolete registry credential was cleared because the GHCR image is public; v2 template `1ncfofsbzx` was verified unchanged.
 - Commits: `6791469` (rebuild) + `945aca3` (Node on PATH); tag `v3.0.0-beta.12`
 - GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/35637570770 (Node, MCP and Python tests passed; image pushed)
 - RunPod template `ok09ni9573` updated via REST API on 2026-09-22: image `v3.0.0-beta.12`, disk 100 GB, Sage on, port 3001 added; v2 template `1ncfofsbzx` verified unchanged.
