@@ -37,7 +37,7 @@ class V3ReadinessTest(unittest.TestCase):
                 result = json.loads(conn.getresponse().read())
                 conn.close()
                 self.assertTrue(result['models_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.12')
+                self.assertEqual(result['version'], '3.0.0-beta.13')
                 self.assertEqual(result['progress'], 100)
                 self.assertEqual(result['total_bytes'], 5)
             finally:
@@ -94,8 +94,32 @@ class ClaudeConnectionTest(unittest.TestCase):
         result = self._status({'RUNPOD_POD_ID': 'abc123', 'KENDO_MCP_CODE': '', 'code_file': 'kendo-deadbeef'})
         self.assertEqual(result['mcp_url'], 'https://abc123-3001.proxy.runpod.net/mcp/kendo-deadbeef')
         self.assertTrue(result['mcp_ready'])
-        self.assertEqual(result['version'], '3.0.0-beta.12')
+        self.assertEqual(result['version'], '3.0.0-beta.13')
+        self.assertEqual(result['comfy_url'], 'https://abc123-8188.proxy.runpod.net/')
 
-    def test_env_code_wins_and_missing_pod_id_hides_url(self):
+    def test_public_bind_health_checks_loopback(self):
+        self.assertEqual(page_server_v3_beta.MCP_HOST, '127.0.0.1')
+
+    def test_runpod_ui_files_and_mcp_bind_are_packaged(self):
+        root = Path(__file__).resolve().parents[1]
+        dockerfile = (root / 'Dockerfile.v3-beta').read_text(encoding='utf-8')
+        entrypoint = (root / 'scripts' / 'entrypoint-v3-beta.sh').read_text(encoding='utf-8')
+        html = (root / 'web' / 'v3-beta.html').read_text(encoding='utf-8')
+        self.assertIn('KENDO_MCP_HOST=0.0.0.0', dockerfile)
+        self.assertIn('COPY web/files.html web/files.js', dockerfile)
+        self.assertIn('KENDO_MCP_HOST:-0.0.0.0', entrypoint)
+        self.assertIn('tee -a', entrypoint)
+        self.assertIn('id="queue-active-count"', html)
+        self.assertGreater(html.index('id="console-panel"'), html.index('id="history"'))
+
+    def test_env_code_wins_and_local_install_uses_loopback_fallback(self):
         self.assertEqual(self._status({'RUNPOD_POD_ID': 'abc123', 'KENDO_MCP_CODE': 'kendo-env', 'code_file': 'kendo-file'})['mcp_url'], 'https://abc123-3001.proxy.runpod.net/mcp/kendo-env')
-        self.assertIsNone(self._status({'RUNPOD_POD_ID': '', 'KENDO_MCP_CODE': 'kendo-env'})['mcp_url'])
+        self.assertEqual(self._status({'RUNPOD_POD_ID': '', 'KENDO_MCP_CODE': 'kendo-env'})['mcp_url'], 'http://127.0.0.1:3001/mcp/kendo-env')
+
+    def test_explicit_https_tunnel_url_wins(self):
+        result = self._status({
+            'RUNPOD_POD_ID': '',
+            'KENDO_MCP_CODE': 'kendo-env',
+            'KENDO_MCP_PUBLIC_URL': 'https://example.trycloudflare.com/mcp/{code}',
+        })
+        self.assertEqual(result['mcp_url'], 'https://example.trycloudflare.com/mcp/kendo-env')

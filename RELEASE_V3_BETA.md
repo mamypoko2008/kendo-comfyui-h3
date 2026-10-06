@@ -2,6 +2,21 @@
 
 Separate beta release. Existing v1 and v2 images and RunPod templates remain unchanged.
 
+## beta.13 — RunPod UI refresh + public MCP bind
+
+- Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.13`
+- Carries the newer professional V3 UI into RunPod: live Active/waiting queue
+  counts, a bottom collapsible Comfy console, and a separate prompt-free
+  generated-files page.
+- Captures the base RunPod service output in `/workspace/comfyui.log` while
+  preserving the normal container log stream, so the Page can show recent logs.
+- Resolves ComfyUI links to `https://POD_ID-8188.proxy.runpod.net/` instead of
+  the Local-only `127.0.0.1` URL.
+- MCP explicitly binds `0.0.0.0:3001` in the image, entrypoint, and RunPod
+  template. There is no IP allowlist; access remains protected by the random
+  `/mcp/kendo-...` path and is published through RunPod's HTTP proxy.
+- V2 and the Windows Local installer remain separate and unchanged.
+
 ## beta.12 — v2 clone + Claude MCP
 
 beta.12 restarts the v3 line from the stable v2.1.2 stack. Everything that was

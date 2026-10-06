@@ -3,13 +3,22 @@ import http.client
 import json
 import os
 from http.server import ThreadingHTTPServer
-import page_server_base as base
+from urllib.parse import quote, urlsplit
+try:
+    import page_server_base as base
+except ModuleNotFoundError:
+    import page_server as base
 import models_v3_beta as models
 
-VERSION = '3.0.0-beta.12'
-MCP_HOST = os.environ.get('KENDO_MCP_HOST', '127.0.0.1')
+VERSION = '3.0.0-beta.13'
+MCP_BIND_HOST = os.environ.get('KENDO_MCP_HOST', '127.0.0.1')
+MCP_HOST = '127.0.0.1' if MCP_BIND_HOST in ('0.0.0.0', '::') else MCP_BIND_HOST
 MCP_PORT = int(os.environ.get('KENDO_MCP_PORT', '3001'))
+COMFY_PORT = int(os.environ.get('KENDO_COMFY_PORT', '8188'))
 MCP_CODE_FILE = os.environ.get('KENDO_MCP_CODE_FILE', '/workspace/.kendo-mcp-code')
+LOG_PATH = '/api/kendo/logs'
+COMFY_LOG_FILE = os.environ.get('KENDO_COMFY_LOG_FILE', '')
+MAX_LOG_BYTES = 192 * 1024
 
 def mcp_code():
     code = os.environ.get('KENDO_MCP_CODE', '').strip()
@@ -22,14 +31,55 @@ def mcp_code():
         return None
 
 def mcp_url():
-    """Public Streamable HTTP URL students paste into Claude; None outside RunPod."""
+    """Streamable HTTP URL: public proxy on RunPod, loopback on Local."""
     pod = os.environ.get('RUNPOD_POD_ID', '').strip()
     code = mcp_code()
-    if not pod or not code:
+    if not code:
         return None
-    return f'https://{pod}-{MCP_PORT}.proxy.runpod.net/mcp/{code}'
+    explicit = os.environ.get('KENDO_MCP_PUBLIC_URL', '').strip()
+    if explicit:
+        return explicit.replace('{code}', quote(code, safe=''))
+    if pod:
+        return f'https://{pod}-{MCP_PORT}.proxy.runpod.net/mcp/{quote(code, safe="")}'
+    return f'http://127.0.0.1:{MCP_PORT}/mcp/{quote(code, safe="")}'
+
+def comfy_url():
+    pod = os.environ.get('RUNPOD_POD_ID', '').strip()
+    if pod:
+        return f'https://{pod}-{COMFY_PORT}.proxy.runpod.net/'
+    return f'http://127.0.0.1:{COMFY_PORT}/'
 
 class V3Handler(base.KendoPageHandler):
+    def do_GET(self):
+        if urlsplit(self.path).path == LOG_PATH:
+            self._send_comfy_logs()
+            return
+        super().do_GET()
+
+    def _send_comfy_logs(self):
+        text = ''
+        available = False
+        if COMFY_LOG_FILE:
+            try:
+                with open(COMFY_LOG_FILE, 'rb') as stream:
+                    stream.seek(0, os.SEEK_END)
+                    size = stream.tell()
+                    stream.seek(max(0, size - MAX_LOG_BYTES))
+                    data = stream.read(MAX_LOG_BYTES)
+                text = data.decode('utf-8', errors='replace')
+                if size > MAX_LOG_BYTES:
+                    text = '… แสดงเฉพาะ Log ล่าสุด …\n' + text
+                available = True
+            except OSError:
+                pass
+        payload = json.dumps({'available': available, 'text': text}).encode('utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def _mcp_ready(self):
         connection = http.client.HTTPConnection(MCP_HOST, MCP_PORT, timeout=2)
         try:
@@ -58,7 +108,8 @@ class V3Handler(base.KendoPageHandler):
         payload = json.dumps(dict(models_ready=models.files_ready(), comfy_ready=self._comfy_ready(),
             download_error=error, downloaded_bytes=downloaded, total_bytes=total,
             progress=round(downloaded * 100 / total, 1), version=VERSION,
-            mcp_ready=self._mcp_ready(), mcp_url=mcp_url())).encode()
+            mcp_ready=self._mcp_ready(), mcp_url=mcp_url(),
+            comfy_url=comfy_url())).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')

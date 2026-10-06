@@ -10,6 +10,7 @@ fi
 # Claude connection code: honour the template env, otherwise keep one per
 # workspace so the URL students pasted survives Pod restarts on the same volume.
 code_file="${KENDO_MCP_CODE_FILE:-/workspace/.kendo-mcp-code}"
+export KENDO_MCP_HOST="${KENDO_MCP_HOST:-0.0.0.0}"
 if [[ -z "${KENDO_MCP_CODE:-}" ]]; then
   if [[ ! -s "$code_file" ]]; then
     python3.12 -c 'import secrets; print("kendo-" + secrets.token_hex(8))' > "$code_file"
@@ -19,6 +20,7 @@ fi
 
 nohup /opt/node/bin/node /opt/kendo-mcp/server.mjs \
   > /workspace/kendo-mcp.log 2>&1 &
-echo "[KENDO v3 beta] Claude MCP server started on port ${KENDO_MCP_PORT:-3001}; log: /workspace/kendo-mcp.log"
+echo "[KENDO v3 beta] Claude MCP server listening on ${KENDO_MCP_HOST}:${KENDO_MCP_PORT:-3001}; log: /workspace/kendo-mcp.log"
 
-exec /opt/kendo/entrypoint.sh
+touch "${KENDO_COMFY_LOG_FILE:-/workspace/comfyui.log}"
+exec /opt/kendo/entrypoint.sh > >(tee -a "${KENDO_COMFY_LOG_FILE:-/workspace/comfyui.log}") 2>&1

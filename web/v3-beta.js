@@ -58,17 +58,44 @@ $('#theme').onclick=()=>setTheme(!document.documentElement.classList.contains('d
 async function api(path,options={}){const response=await fetch('/api/comfy'+path,options);const result=await response.json();if(!response.ok)throw new Error(result.error?.message||result.error||JSON.stringify(result.node_errors||result));return result}
 async function systemStatus(){
   try{const response=await fetch('/api/kendo/status',{cache:'no-store'});if(!response.ok)throw new Error();const s=await response.json();ready=s.models_ready&&s.comfy_ready;updateButton();$('#status').textContent=ready?'READY':s.download_error?'DOWNLOAD ERROR':'PREPARING';$('#progress').hidden=ready;$('#progress').value=s.progress||0;
+    if(s.comfy_url)document.querySelectorAll('.comfy-link').forEach(link=>link.href=s.comfy_url);
     if(!submitting&&!jobs.size)notice(s.download_error?'ดาวน์โหลดสะดุด กรุณา Restart Pod เพื่อดาวน์โหลดต่อ':!s.models_ready?`กำลังดาวน์โหลดโมเดล ${s.progress}%`:!s.comfy_ready?'กำลังเริ่ม ComfyUI':'ระบบพร้อมสร้างวิดีโอ');
     renderClaude(s);
   }catch{ready=false;updateButton();$('#status').textContent='OFFLINE'}
 }
+async function refreshQueue(){
+  try{
+    const queue=await api('/queue'),active=Array.isArray(queue.queue_running)?queue.queue_running.length:0,pending=Array.isArray(queue.queue_pending)?queue.queue_pending.length:0;
+    $('#queue-active-count').textContent=String(active);$('#queue-pending-count').textContent=String(pending);
+    $('.queue-item.active').classList.toggle('has-jobs',active>0);$('.queue-item.pending').classList.toggle('has-jobs',pending>0);
+    $('#queue-state').textContent=active||pending?`ทั้งหมด ${active+pending} งาน`:'คิวว่าง';
+  }catch{
+    $('#queue-active-count').textContent='–';$('#queue-pending-count').textContent='–';$('#queue-state').textContent='อ่านคิวไม่ได้';
+    $('.queue-item.active').classList.remove('has-jobs');$('.queue-item.pending').classList.remove('has-jobs');
+  }
+}
 function renderClaude(s){
   const card=$('#claude');if(!s.mcp_url){card.hidden=true;return}
   card.hidden=false;$('#claude-url').value=s.mcp_url;$('#claude-code-cmd').textContent='claude mcp add --transport http kendo '+s.mcp_url;
-  $('#claude-state').textContent=s.mcp_ready?'พร้อมให้ Claude สั่งงาน':'กำลังเริ่มบริการ…';
+  const local=/^http:\/\/(127\.0\.0\.1|localhost)(:|\/)/i.test(s.mcp_url);
+  $('#claude-state').textContent=s.mcp_ready?(local?'พร้อมใช้จากเครื่องนี้':'พร้อมให้ Claude สั่งงาน'):'กำลังเริ่มบริการ…';
+  $('#claude-remote-help').innerHTML=local?'<b>Claude Desktop/Claude.ai</b>: Local URL ใช้จากภายนอกไม่ได้ ต้องสร้าง HTTPS tunnel ก่อน':'<b>Claude Desktop/Claude.ai</b>: Settings → Connectors → Add custom connector → วาง URL → Add';
+  $('#claude-hint').textContent=local?'URL นี้ใช้ได้เฉพาะ MCP client บนเครื่องนี้ · หากต้องการเชื่อมจากภายนอก ให้สร้าง Public HTTPS tunnel':'เก็บ URL นี้เป็นความลับ เพราะผู้ที่มี URL สามารถสั่งงาน Kendo ได้';
 }
 $('#claude-toggle').onclick=()=>{const open=$('#claude-steps').hidden;$('#claude-steps').hidden=!open;$('#claude-toggle').setAttribute('aria-expanded',String(open))};
 $('#claude-copy').onclick=async()=>{const url=$('#claude-url').value;try{await navigator.clipboard.writeText(url)}catch{$('#claude-url').select();document.execCommand('copy')}$('#claude-copy').textContent='คัดลอกแล้ว ✓';setTimeout(()=>{$('#claude-copy').textContent='คัดลอก URL'},2000)};
+async function refreshConsole(){
+  if(!$('#console-panel').open)return;
+  try{
+    const response=await fetch('/api/kendo/logs',{cache:'no-store'});if(!response.ok)throw new Error();
+    const data=await response.json(),view=$('#comfy-console');
+    const follow=view.scrollHeight-view.scrollTop-view.clientHeight<48;
+    view.textContent=data.available?(data.text||'ComfyUI เริ่มทำงานแล้ว · ยังไม่มีข้อความ Log'):'ยังไม่พบไฟล์ Log ของ ComfyUI';
+    $('#console-state').textContent=data.available?'อัปเดตอัตโนมัติทุก 2 วินาที':'กำลังรอ ComfyUI เริ่มทำงาน…';
+    if(follow)view.scrollTop=view.scrollHeight;
+  }catch{$('#console-state').textContent='อ่าน Log ไม่สำเร็จ'}
+}
+$('#console-panel').ontoggle=()=>{if($('#console-panel').open)void refreshConsole();else $('#console-state').textContent='เมนู Log · คลิกเพื่อเปิด'};
 // Jobs Claude submits through the MCP server never pass through this tab, so
 // merge finished Kendo clips from ComfyUI history into the local history.
 async function syncServerHistory(){
@@ -100,4 +127,4 @@ async function generate(){
   submitting=true;updateButton();notice('กำลังอัปโหลดไฟล์…');
   try{const names={};for(const [kind,files] of Object.entries(selected)){names[kind]=[];for(const file of files)names[kind].push(await upload(file))}const workflow=KendoWorkflow.buildWorkflow({...settings,...names});const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});if(!result.prompt_id)throw new Error('ไม่พบหมายเลขงาน');jobs.set(result.prompt_id,true);$('#activity').textContent=`${jobs.size} งานในคิว`;notice('ส่งเข้าคิวแล้ว · Seed '+seed);void monitor(result.prompt_id,seed)}catch(e){notice(String(e.message))}finally{submitting=false;updateButton()}
 }
-$('#generate').onclick=generate;renderHistory();void systemStatus();setInterval(systemStatus,5000);void syncServerHistory();setInterval(syncServerHistory,20000);
+$('#generate').onclick=generate;renderHistory();void systemStatus();setInterval(systemStatus,5000);void refreshQueue();setInterval(refreshQueue,2000);void syncServerHistory();setInterval(syncServerHistory,20000);setInterval(refreshConsole,2000);
