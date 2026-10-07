@@ -4,7 +4,7 @@
 
 Published on 7 October 2026. Open [RunPod Template V4 beta.2](https://console.runpod.io/hub/template/tlitx232d4), template ID `tlitx232d4`. The saved template uses `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2`, container disk 200 GB, and persistent volume 200 GB. Anonymous public registry verification confirmed Linux amd64, version beta.2, and the V4 entrypoint. Image digest: `sha256:cf31c72384448daf6ee96a02b4d0ba9f273f25001373d6c8f54de1babdfa04fb`.
 
-[Build and test run](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37556969827). Python, Node, and browser regression checks passed. GPU inference remains unvalidated because the previous Pod and Network Volume were removed.
+[Build and test run](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37556969827) completed successfully: 35 Python tests and 13 Node tests passed, and the image was pushed successfully. Browser regression checks passed locally. GPU inference remains unvalidated because the previous Pod and Network Volume were removed.
 
 The existing public beta.1 template's update API returned `public templates cannot have Registry Credentials` even though the template has no registry authentication. A separate versioned beta.2 template was created and read back successfully. The beta.1 template is retained for rollback; no paid Pod or volume was created.
 
