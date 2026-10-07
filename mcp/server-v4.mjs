@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { registerKieTools } from './kie-tools.mjs';
 
 const require = createRequire(import.meta.url);
-const VERSION = '4.0.0-beta.1';
+const VERSION = '4.0.0-beta.2';
 const env = (name, fallback) => (process.env[name] ?? '').trim() || fallback;
 const CONFIG = {
   host: env('KENDO_MCP_HOST', '0.0.0.0'),

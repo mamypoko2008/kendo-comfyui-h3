@@ -1,5 +1,14 @@
 # Kendo Studio V4 · 4.0.0-beta.1
 
+## beta.2 — API recovery and storage checks (preparing publication)
+
+- Recover one read-only request when the response is empty, truncated, or temporarily unavailable. Show readable Thai errors instead of a JSON parser error; never retry an upscale submission automatically.
+- Check the actual model filesystem's free space before downloads, account for resumable partial files, and keep 5 GiB free. If both model groups cannot fit together, finish H3 first and then report the remaining LTX space requirement before starting that download.
+- New template defaults: container disk 200 GB and persistent volume 200 GB. If attaching a Network Volume, choose one of at least 200 GB; its size must be checked separately from the template defaults.
+- `Dockerfile.v4-update` pins the published beta.1 image and updates the affected files. `Dockerfile.v4` remains the full stack build. Neither build changes the LTX model choices or Tiled Fusion settings.
+
+## beta.1 — published baseline
+
 V4 ต่อจากการสร้างคลิป MiniMax H3 ใน V3 และเพิ่มเมนู **อัพสเกล** โดยใช้ LTX-2.5 Refine Details / Tiled Fusion จาก workflow ที่แนบ
 
 สถานะ: เผยแพร่ Docker image และสร้าง RunPod template V4 แล้วเมื่อ 6 ตุลาคม 2026 การทดสอบโค้ดผ่านในเครื่องและ GitHub แต่ยังไม่ได้ทดสอบ inference บน GPU จริง จึงยังไม่ยืนยันคุณภาพ/เวลา/VRAM

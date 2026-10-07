@@ -21,7 +21,7 @@ import ltx_models_v4 as ltx
 import page_server_v3_beta as v3
 from upscale_workflow_v4 import build_workflow, DEFAULT_PROMPT
 
-VERSION = '4.0.0-beta.1'
+VERSION = '4.0.0-beta.2'
 INPUT_ROOT = Path(os.environ.get('KENDO_INPUT_DIR', '/workspace/runpod-slim/ComfyUI/input'))
 OUTPUT_ROOT = Path(os.environ.get('KENDO_OUTPUT_DIR', '/workspace/runpod-slim/ComfyUI/output'))
 STATE_ROOT = Path(os.environ.get('KENDO_V4_STATE_DIR', '/workspace/.kendo-v4'))

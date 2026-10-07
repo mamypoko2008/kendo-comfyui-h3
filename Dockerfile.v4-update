@@ -1,0 +1,8 @@
+# beta.2 updates the published, pinned V4 stack without reinstalling CUDA/LTX.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1@sha256:0c67edf08fd1052f7f31177af2946216ea94e91111e08655992d8be677a460c7
+ENV KENDO_IMAGE_VERSION=4.0.0-beta.2
+COPY web/upscale-v4.js /opt/kendo-page/upscale-v4.js
+COPY scripts/page_server_v4.py /opt/kendo/page_server.py
+COPY scripts/download_models_v4.py /opt/kendo/download_models_v4.py
+COPY mcp/server-v4.mjs /opt/kendo-mcp/server.mjs
+RUN python3.12 -m compileall -q /opt/kendo

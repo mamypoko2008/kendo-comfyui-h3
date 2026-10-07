@@ -5,7 +5,14 @@ on:
       image_tag:
         description: V4 image tag
         required: true
-        default: v4.0.0-beta.1
+        default: v4.0.0-beta.2
+      dockerfile:
+        description: Image build definition
+        type: choice
+        options:
+          - Dockerfile.v4-update
+          - Dockerfile.v4
+        default: Dockerfile.v4-update
   push:
     tags:
       - 'v4.*'
@@ -39,7 +46,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile.v4
+          file: ${{ inputs.dockerfile || 'Dockerfile.v4-update' }}
           platforms: linux/amd64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:${{ github.ref_type == 'tag' && github.ref_name || inputs.image_tag }}

@@ -5,7 +5,20 @@ const orientation={landscape:'แนวนอน',portrait:'แนวตั้�
 const states={queued:'รอคิว',running:'กำลังอัพสเกล',done:'เสร็จแล้ว',error:'เกิดข้อผิดพลาด',unknown:'ไม่พบงานในคิว กรุณาตรวจ ComfyUI',missing_output:'ไม่พบไฟล์ผลลัพธ์'};
 function theme(dark){document.documentElement.classList.toggle('dark',dark);$('#theme').textContent=dark?'โหมดสว่าง':'โหมดมืด';$('#theme').setAttribute('aria-pressed',String(dark));try{localStorage.setItem('kendo-theme',dark?'dark':'light')}catch{}}
 let dark=false;try{dark=localStorage.getItem('kendo-theme')==='dark'}catch{}theme(dark);$('#theme').onclick=()=>theme(!document.documentElement.classList.contains('dark'));
-async function api(path,options={}){const response=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(180000),...options});const body=await response.json();if(!response.ok)throw Error(body.error||'คำขอไม่สำเร็จ');return body;}
+async function api(path,options={}){
+ const readOnly=(options.method||'GET').toUpperCase()==='GET';
+ for(let attempt=0;attempt<(readOnly?2:1);attempt++){
+  let response,raw;
+  try{response=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(180000),...options});raw=await response.text();}
+  catch{if(readOnly&&attempt===0){await new Promise(r=>setTimeout(r,750));continue;}throw Error(path==='/api/kendo/upscale'?'ไม่ได้รับคำตอบจากระบบ กรุณาตรวจรายการงานก่อนกดอัพสเกลซ้ำ':'เชื่อมต่อระบบไม่สำเร็จ กรุณารอสักครู่แล้วลองใหม่');}
+  let body;try{body=JSON.parse(raw);}catch{}
+  const valid=body&&typeof body==='object'&&!Array.isArray(body);
+  if(readOnly&&attempt===0&&(!raw.trim()||(response.ok&&!valid)||response.status>=500)){await new Promise(r=>setTimeout(r,750));continue;}
+  if(!response.ok)throw Error(valid&&typeof body.error==='string'?body.error:'ระบบยังไม่พร้อม กรุณารอสักครู่แล้วลองใหม่');
+  if(!valid)throw Error(path==='/api/kendo/upscale'?'ระบบส่งคำตอบกลับมาไม่ครบ กรุณาตรวจรายการงานก่อนกดอัพสเกลซ้ำ':'ระบบส่งข้อมูลกลับมาไม่ครบ กรุณารอสักครู่แล้วลองใหม่');
+  return body;
+ }
+}
 const post=(path,body)=>api(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 const videoUrl=file=>'/api/comfy/view?'+new URLSearchParams({filename:file.filename,subfolder:file.subfolder||'',type:file.type||'output'});
 function notice(text){$('#upscale-notice').textContent=text;}

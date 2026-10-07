@@ -70,6 +70,26 @@ class VideoIOTests(unittest.TestCase):
                 self.assertRaises(ValueError,nodes.KendoLTXSaveVideo().save,tensor,'source.mp4',24,2,2,2,'../escape')
 
 class DownloadTests(unittest.TestCase):
+    def test_storage_check_counts_resumable_bytes_and_keeps_ready_models(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(downloader.h3,'MODEL_ROOT',folder):
+            specs=[('repo','ready',10),('repo','pending',20)]
+            (Path(folder)/'ready').write_bytes(b'x'*10)
+            (Path(folder)/'pending.part').write_bytes(b'x'*7)
+            self.assertEqual(downloader.remaining_bytes(specs),13)
+            with patch.object(downloader.shutil,'disk_usage',return_value=types.SimpleNamespace(free=12)):
+                self.assertRaisesRegex(RuntimeError,'พื้นที่เก็บโมเดลไม่พอ',downloader.require_space,specs)
+                downloader.require_space(specs[:1])
+            with patch.object(downloader.shutil,'disk_usage',return_value=types.SimpleNamespace(free=13+downloader.HEADROOM)):
+                downloader.require_space(specs)
+    def test_low_storage_reports_error_without_starting_network_downloads(self):
+        with tempfile.TemporaryDirectory() as folder,patch.object(downloader.h3,'MODEL_ROOT',folder), \
+             patch.object(downloader.shutil,'disk_usage',return_value=types.SimpleNamespace(free=1)), \
+             patch.object(downloader,'download') as network,patch('builtins.print'):
+            ready=Path(folder)/'ready-flag';error=Path(folder)/'error'
+            downloader.group([('repo','model',100)],ready,error)
+            network.assert_not_called()
+            self.assertFalse(ready.exists())
+            self.assertIn('พื้นที่เก็บโมเดลไม่พอ',error.read_text(encoding='utf-8'))
     def test_resume_and_ignore_stale_ready_flags(self):
         with tempfile.TemporaryDirectory() as folder,patch.object(downloader.h3,'MODEL_ROOT',folder):
             partial=Path(folder)/'model.part';partial.write_bytes(b'abc')

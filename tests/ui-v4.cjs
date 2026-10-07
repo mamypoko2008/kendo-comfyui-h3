@@ -19,21 +19,29 @@ const assert=require('node:assert/strict');
   const origin='http://127.0.0.1:'+server.address().port;
   const file={filename:'H3_latest.mp4',subfolder:'video',type:'output'};
   const metadata={display_width:1080,display_height:1920,orientation:'portrait',duration:5,fps:24,frame_count:120,has_audio:true};
-  let ready=true,selected,submitted,done=false,source={source_id:'chosen',name:file.filename,source_kind:'generated',metadata};
+  let ready=true,selected,submitted,done=false,emptyStatus=1,truncatedSource=1,emptySubmit=false,submitCount=0,source={source_id:'chosen',name:file.filename,source_kind:'generated',metadata};
   let job;
   await page.route('**/api/**',async route=>{
    const url=new URL(route.request().url()),p=url.pathname;
    let data={};let status=200;
    if(p==='/api/kendo/status')data={models_ready:true,comfy_ready:true,mcp_ready:false,progress:100};
    else if(p==='/api/kendo/files')data={files:[file]};
-   else if(p==='/api/kendo/upscale/status')data={models_ready:ready,nodes_ready:ready,progress:ready?100:25};
+   else if(p==='/api/kendo/upscale/status'){
+    if(emptyStatus-->0){await route.fulfill({status:200,contentType:'application/json',body:''});return;}
+    data={models_ready:ready,nodes_ready:ready,progress:ready?100:25};
+   }
    else if(p==='/api/kendo/upscale/select'){selected=route.request().postDataJSON();data=source;}
-   else if(p.startsWith('/api/kendo/upscale/source/'))data=source;
+   else if(p.startsWith('/api/kendo/upscale/source/')){
+    if(truncatedSource-->0){await route.fulfill({status:200,contentType:'application/json',body:'{"source_id":'});return;}
+    data=source;
+   }
    else if(p==='/api/kendo/upscale/upload'){
     assert.ok((route.request().postDataBuffer()||Buffer.alloc(0)).length>0);
     source={source_id:'uploaded',name:'local.webm',source_kind:'upload',metadata:{...metadata,display_width:1920,display_height:1080,orientation:'landscape',has_audio:false}};data=source;status=201;
    }else if(p==='/api/kendo/upscale'){
-    submitted=route.request().postDataJSON();job={job_id:'upscale-job',name:source.name,source_id:source.source_id,preset:submitted.preset,metadata:source.metadata,target_width:3840,target_height:2160,status:'queued'};data=job;status=202;
+    submitCount++;submitted=route.request().postDataJSON();
+    if(emptySubmit){await route.fulfill({status:200,contentType:'application/json',body:''});return;}
+    job={job_id:'upscale-job',name:source.name,source_id:source.source_id,preset:submitted.preset,metadata:source.metadata,target_width:3840,target_height:2160,status:'queued'};data=job;status=202;
    }else if(p==='/api/kendo/upscale/jobs')data={jobs:job?[job]:[]};
    else if(p==='/api/kendo/upscale/job/upscale-job'){
     if(done)job={...job,status:'done',file:{filename:'upscaled.mp4',subfolder:'video',type:'output'}};data=job;
@@ -48,7 +56,7 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>document.querySelector('#source-name')?.textContent==='H3_latest.mp4');
   assert.deepEqual(selected,file);
   assert.equal(await page.locator('#source-orientation').textContent(),'แนวตั้ง');
-  assert.ok(await page.locator('#start-upscale').isEnabled());
+  await page.waitForFunction(()=>!document.querySelector('#start-upscale').disabled);
   assert.equal(await page.locator('#upscale-result').isHidden(),true);
   await page.goto(origin+'/files-v4.html');
   await page.locator('.generated-actions a').filter({hasText:'อัพสเกล'}).click();
@@ -75,6 +83,10 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>document.querySelector('#source-name').textContent==='local.webm');
   await page.getByRole('button',{name:'ดูผลลัพธ์'}).click();
   assert.equal(await page.locator('#upscale-result').isVisible(),true);
+  emptySubmit=true;await page.locator('#start-upscale').click();
+  await page.waitForFunction(()=>document.querySelector('#upscale-notice').textContent.includes('ตรวจรายการงานก่อน'));
+  assert.equal(submitCount,2,'an empty queue response must never resubmit the upscale automatically');
+  assert.ok(!(await page.locator('#upscale-notice').textContent()).includes('JSON'));
   for(const width of [1440,768,390,320]){
    await page.setViewportSize({width,height:900});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);

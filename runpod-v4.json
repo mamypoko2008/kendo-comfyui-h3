@@ -1,8 +1,8 @@
 {
   "name": "Kendo-ComfyUI-H3 V4",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2",
   "category": "NVIDIA",
-  "containerDiskInGb": 100,
+  "containerDiskInGb": 200,
   "dockerEntrypoint": [],
   "dockerStartCmd": [],
   "volumeInGb": 200,
@@ -23,5 +23,5 @@
     "KENDO_MCP_HOST": "0.0.0.0",
     "KENDO_UPSCALE_MAX_SECONDS": "60"
   },
-  "readme": "Kendo Studio V4: MiniMax H3 generation plus a separate Upscale page using LTX 2.5 Refine Details/Tiled Fusion. Select a completed clip or a file from the generated-files page, or upload MP4/MOV/WebM. Aspect ratio is read from the source. 1080p/4K output keeps source frame count/fps/audio; no before/after comparison. Use a separate V4 persistent volume (200 GB). Accept Lightricks model access on Hugging Face and set HF_TOKEN in the Pod environment before first download. Services: Page 3000, MCP 3001, ComfyUI 8188, JupyterLab 8888. V4 beta.1 image is published. GPU inference still needs validation; begin with a short 1080p clip."
+  "readme": "Kendo Studio V4: MiniMax H3 generation plus a separate Upscale page using LTX 2.5 Refine Details/Tiled Fusion. Select a completed clip or a file from the generated-files page, or upload MP4/MOV/WebM. Aspect ratio is read from the source. 1080p/4K output keeps source frame count/fps/audio; no before/after comparison. Container disk 200 GB. Use a separate V4 persistent volume of at least 200 GB. If attaching a Network Volume, verify that volume is at least 200 GB; it has its own size. H3 plus LTX model files total about 115 GB, before outputs and temporary files. Accept Lightricks model access on Hugging Face and set HF_TOKEN in the Pod environment before first download. Services: Page 3000, MCP 3001, ComfyUI 8188, JupyterLab 8888. V4 beta.2 adds graceful API response handling and free-space checks before model downloads. GPU inference still needs validation; begin with a short 1080p clip."
 }
