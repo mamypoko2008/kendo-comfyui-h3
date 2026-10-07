@@ -1,6 +1,12 @@
-# Kendo Studio V4 · 4.0.0-beta.1
+# Kendo Studio V4 · 4.0.0-beta.2
 
-## beta.2 — API recovery and storage checks (preparing publication)
+## beta.2 — API recovery and storage checks
+
+Published on 7 October 2026. Open [RunPod Template V4 beta.2](https://console.runpod.io/hub/template/tlitx232d4), template ID `tlitx232d4`. The saved template uses `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2`, container disk 200 GB, and persistent volume 200 GB. Anonymous public registry verification confirmed Linux amd64, version beta.2, and the V4 entrypoint. Image digest: `sha256:cf31c72384448daf6ee96a02b4d0ba9f273f25001373d6c8f54de1babdfa04fb`.
+
+[Build and test run](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37556969827). Python, Node, and browser regression checks passed. GPU inference remains unvalidated because the previous Pod and Network Volume were removed.
+
+The existing public beta.1 template's update API returned `public templates cannot have Registry Credentials` even though the template has no registry authentication. A separate versioned beta.2 template was created and read back successfully. The beta.1 template is retained for rollback; no paid Pod or volume was created.
 
 - Recover one read-only request when the response is empty, truncated, or temporarily unavailable. Show readable Thai errors instead of a JSON parser error; never retry an upscale submission automatically.
 - Check the actual model filesystem's free space before downloads, account for resumable partial files, and keep 5 GiB free. If both model groups cannot fit together, finish H3 first and then report the remaining LTX space requirement before starting that download.
@@ -53,8 +59,8 @@ SHA256: `773f258bead45dfd8af68f89e63ca659a58688230bce17f2d93df4819a4b53ea`
 ## ชุดสำหรับ RunPod
 
 - Dockerfile: `Dockerfile.v4`
-- Template configuration: `runpod-v4.json` ชื่อ **Kendo-ComfyUI-H3 V4**
-- Image ที่เผยแพร่แล้ว: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.1`
+- Template configuration: `runpod-v4.json` ชื่อ **Kendo-ComfyUI-H3 V4 beta.2**
+- Image ที่เผยแพร่แล้ว: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2`
 - GitHub Actions: `.github/workflows/build-v4.yml` สั่ง workflow_dispatch หรือ tag `v4.*`
 - พอร์ตหน้าเว็บ 3000, MCP 3001, ComfyUI 8188
 - Persistent volume แยก V4 200 GB; โมเดล H3 ประมาณ 44 GB และ LTX ประมาณ 71 GB รวมราว 115 GB ก่อนไฟล์งาน
