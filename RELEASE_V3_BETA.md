@@ -98,6 +98,9 @@ https://POD_ID-3001.proxy.runpod.net/mcp/<access code>
 
 ### Published
 
+- Commits: `0fe26eb` + `b45c04e`; tag `v3.0.0-beta.15`
+- GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37769051535 (all Python/Node tests passed; image pushed)
+- RunPod template `ok09ni9573` updated on 2026-10-08 through GraphQL `saveTemplate`: image `v3.0.0-beta.15`, public visibility, MCP bind, ports, env, and disk/volume 100 GB preserved. V2 template `1ncfofsbzx` was verified unchanged at `v2.1.2`.
 - Commit: `4ec6b68`; tag `v3.0.0-beta.13`
 - GitHub Actions: https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/37451331195 (all tests passed; image pushed)
 - Runpod template `ok09ni9573` updated on 2026-10-06: image `v3.0.0-beta.13`, public MCP on `0.0.0.0:3001`, disk/volume 100 GB, and public visibility preserved. The obsolete registry credential was cleared because the GHCR image is public; v2 template `1ncfofsbzx` was verified unchanged.
