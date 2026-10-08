@@ -2,7 +2,7 @@
 
 Separate beta release. Existing v1 and v2 images and RunPod templates remain unchanged.
 
-## beta.14 — GPU auto-detect + verified Sage status
+## beta.15 — GPU auto-detect + verified Sage status
 
 - Detects the assigned GPU name, VRAM, driver, and CUDA compute capability at
   every Pod start. RTX 5090 and RTX PRO 6000 Blackwell are both recognized as

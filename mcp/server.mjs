@@ -15,7 +15,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod';
 
 const require = createRequire(import.meta.url);
-const VERSION = '3.0.0-beta.14';
+const VERSION = '3.0.0-beta.15';
 const env = (name, fallback) => (process.env[name] ?? '').trim() || fallback;
 const CONFIG = {
   host: env('KENDO_MCP_HOST', '0.0.0.0'),

@@ -1,7 +1,7 @@
 # v3 beta = the tested v2 stack (CUDA 13 / ComfyUI / SageAttention) plus an
 # in-Pod MCP server so Claude Desktop / Claude Code can drive generation.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.14 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.15 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=1 \

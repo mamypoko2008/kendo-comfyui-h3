@@ -10,7 +10,7 @@ except ModuleNotFoundError:
     import page_server as base
 import models_v3_beta as models
 
-VERSION = '3.0.0-beta.14'
+VERSION = '3.0.0-beta.15'
 MCP_BIND_HOST = os.environ.get('KENDO_MCP_HOST', '127.0.0.1')
 MCP_HOST = '127.0.0.1' if MCP_BIND_HOST in ('0.0.0.0', '::') else MCP_BIND_HOST
 MCP_PORT = int(os.environ.get('KENDO_MCP_PORT', '3001'))
