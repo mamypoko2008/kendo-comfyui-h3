@@ -68,7 +68,7 @@ test('wrong or missing access code is a 404, never a 401 that triggers OAuth', a
   }
   const health = await fetch(mcpUrl.replace('/mcp/' + CODE, '/healthz'));
   assert.equal(health.status, 200);
-  assert.equal((await health.json()).version, '3.0.0-beta.12');
+  assert.equal((await health.json()).version, '3.0.0-beta.14');
 });
 
 test('exposes the Kendo tool set and instructions', async () => {

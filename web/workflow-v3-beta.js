@@ -1,6 +1,6 @@
 /* Shared by the browser and dependency-free workflow tests. */
 (function (root) {
-  function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), images = [], videos = [], audios = [], videoAudio = false}) {
+  function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), images = [], videos = [], audios = [], videoAudio = false, attentionMode = 'global_sage'}) {
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
     if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
@@ -29,6 +29,12 @@
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
       save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3',format:'auto',codec:'auto',video:['video',0]})
     };
+    if (!['global_sage','kj_memory'].includes(attentionMode)) throw new Error('Invalid attention mode');
+    if (attentionMode === 'kj_memory' && root.KENDO_LOCAL_RUNTIME?.kj_sage_available) {
+      w.sage = n('MiniMaxH3MemoryEfficientSageAttentionPatch',{model:['turbo',0]});
+      w.guider.inputs.model = ['sage',0];
+      w.schedule.inputs.model = ['sage',0];
+    }
     images.forEach((image,i)=>{w['image'+i]=n('LoadImage',{image});w.reference.inputs['ref_images.ref_image_'+i]=['image'+i,0]});
     videos.forEach((video,i)=>{
       w['refVideo'+i]=n('VHS_LoadVideo',{video,force_rate:24,custom_width:0,custom_height:0,frame_load_cap:frames,skip_first_frames:0,select_every_nth:1});

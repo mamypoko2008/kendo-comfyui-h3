@@ -42,3 +42,19 @@ test('v3 clips are saved under their own prefix so history can tell releases apa
  assert.equal(buildWorkflow(base).save.inputs.filename_prefix,'video/Kendo_H3_v3');
  assert.equal(require('../web/workflow.js').buildWorkflow(base).save.inputs.filename_prefix,'video/Kendo_H3_v2');
 });
+test('Local V4 defaults to global Sage and only inserts KJ patch in memory mode',()=>{
+ globalThis.KENDO_LOCAL_RUNTIME={sage:true,global_sage:true,kj_sage_available:true};
+ try{
+  const global=buildWorkflow(base);
+  assert.ok(!global.sage);
+  assert.deepEqual(global.guider.inputs.model,['turbo',0]);
+  const w=buildWorkflow({...base,attentionMode:'kj_memory'});
+  assert.equal(w.sage.class_type,'MiniMaxH3MemoryEfficientSageAttentionPatch');
+  assert.deepEqual(w.sage.inputs.model,['turbo',0]);
+  assert.deepEqual(w.guider.inputs.model,['sage',0]);
+  assert.deepEqual(w.schedule.inputs.model,['sage',0]);
+ }finally{delete globalThis.KENDO_LOCAL_RUNTIME}
+ const native=buildWorkflow(base);
+ assert.ok(!native.sage);
+ assert.deepEqual(native.guider.inputs.model,['turbo',0]);
+});

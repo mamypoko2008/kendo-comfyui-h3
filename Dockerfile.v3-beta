@@ -1,7 +1,7 @@
 # v3 beta = the tested v2 stack (CUDA 13 / ComfyUI / SageAttention) plus an
 # in-Pod MCP server so Claude Desktop / Claude Code can drive generation.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v1.1.5
-ENV KENDO_IMAGE_VERSION=3.0.0-beta.13 \
+ENV KENDO_IMAGE_VERSION=3.0.0-beta.14 \
     KENDO_WAIT_FOR_MODELS=0 \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_ENABLE_SAGE=1 \
@@ -27,14 +27,14 @@ COPY mcp/package.json mcp/package-lock.json /opt/kendo-mcp/
 RUN cd /opt/kendo-mcp && /opt/node/bin/npm ci --omit=dev --no-audit --no-fund
 COPY mcp/server.mjs /opt/kendo-mcp/server.mjs
 
-COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py /opt/kendo/
+COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py scripts/detect_runpod_runtime.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh
 COPY scripts/page_server.py /opt/kendo/page_server_base.py
 COPY scripts/page_server_v3_beta.py /opt/kendo/page_server.py
 COPY web/v3-beta.html /opt/kendo-page/index.html
-COPY web/v3-beta.css web/v3-beta.js web/workflow-v3-beta.js /opt/kendo-page/
+COPY web/v3-beta.css web/v3-beta.js web/workflow-v3-beta.js web/runtime-v4-local.js /opt/kendo-page/
 COPY web/files.html web/files.js /opt/kendo-page/
 COPY scripts/entrypoint-v3-beta.sh /opt/kendo/entrypoint-v3-beta.sh
-RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v3-beta.sh
+RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v3-beta.sh /opt/kendo/detect_runpod_runtime.py
 EXPOSE 3001
 ENTRYPOINT ["/opt/kendo/entrypoint-v3-beta.sh"]

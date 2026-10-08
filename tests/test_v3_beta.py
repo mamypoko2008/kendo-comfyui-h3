@@ -37,7 +37,7 @@ class V3ReadinessTest(unittest.TestCase):
                 result = json.loads(conn.getresponse().read())
                 conn.close()
                 self.assertTrue(result['models_ready'])
-                self.assertEqual(result['version'], '3.0.0-beta.13')
+                self.assertEqual(result['version'], '3.0.0-beta.14')
                 self.assertEqual(result['progress'], 100)
                 self.assertEqual(result['total_bytes'], 5)
             finally:
@@ -94,7 +94,7 @@ class ClaudeConnectionTest(unittest.TestCase):
         result = self._status({'RUNPOD_POD_ID': 'abc123', 'KENDO_MCP_CODE': '', 'code_file': 'kendo-deadbeef'})
         self.assertEqual(result['mcp_url'], 'https://abc123-3001.proxy.runpod.net/mcp/kendo-deadbeef')
         self.assertTrue(result['mcp_ready'])
-        self.assertEqual(result['version'], '3.0.0-beta.13')
+        self.assertEqual(result['version'], '3.0.0-beta.14')
         self.assertEqual(result['comfy_url'], 'https://abc123-8188.proxy.runpod.net/')
 
     def test_public_bind_health_checks_loopback(self):
@@ -108,6 +108,9 @@ class ClaudeConnectionTest(unittest.TestCase):
         self.assertIn('KENDO_MCP_HOST=0.0.0.0', dockerfile)
         self.assertIn('COPY web/files.html web/files.js', dockerfile)
         self.assertIn('KENDO_MCP_HOST:-0.0.0.0', entrypoint)
+        self.assertIn('detect_runpod_runtime.py', dockerfile)
+        self.assertIn('detect_runpod_runtime.py', entrypoint)
+        self.assertIn('export KENDO_ENABLE_SAGE=0', entrypoint)
         self.assertIn('tee -a', entrypoint)
         self.assertIn('id="queue-active-count"', html)
         self.assertGreater(html.index('id="console-panel"'), html.index('id="history"'))

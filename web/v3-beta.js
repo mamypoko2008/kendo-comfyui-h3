@@ -5,6 +5,24 @@ const limits = {image:9,video:1,audio:3};
 const extensions = {image:/\.(png|jpe?g|webp)$/i,video:/\.(mp4|webm|mov)$/i,audio:/\.(wav|mp3|flac|ogg|m4a)$/i};
 let ready=false,submitting=false,lastSeed=null;
 const jobs=new Map();
+function renderRuntime(value){
+  const runtime=value||globalThis.KENDO_LOCAL_RUNTIME||{};
+  const badge=$('#attention-status');
+  const sage=runtime.sage&&typeof runtime.sage==='object'?runtime.sage:{};
+  const active=sage.active===true||runtime.global_sage===true||runtime.sage===true;
+  badge.textContent=`ATTENTION · ${runtime.attention||(active?'Sage Global · ACTIVE':'Native · FALLBACK')}`;
+  badge.classList.toggle('active',active);badge.classList.toggle('fallback',!active);
+  badge.title=sage.reason||`Setup ${runtime.setup||'-'} · Probe ${runtime.sage_probe||sage.version||'-'}`;
+  const gpu=runtime.gpu||{};
+  const gpuText=[gpu.name,gpu.vram_gb?gpu.vram_gb+' GB':null,gpu.compute_capability?'sm_'+String(gpu.compute_capability).replace('.',''):null].filter(Boolean).join(' · ');
+  let gpuBadge=$('#gpu-status');
+  if(!gpuBadge){gpuBadge=document.createElement('span');gpuBadge.id='gpu-status';badge.before(gpuBadge)}
+  gpuBadge.textContent=`GPU · ${gpuText||'กำลังตรวจสอบ'}`;
+  gpuBadge.title=`Driver ${gpu.driver||'-'} · Compute ${gpu.compute_capability||'-'}`;
+  const kj=$('#attention-mode option[value="kj_memory"]');
+  kj.disabled=runtime.kj_sage_available!==true;
+  if(kj.disabled&&$('#attention-mode').value==='kj_memory')$('#attention-mode').value='global_sage';
+}
 function notice(text){$('#notice').textContent=text}
 function updateButton(){$('#generate').disabled=!ready||submitting}
 function renderMedia(kind){
@@ -35,6 +53,12 @@ for(const kind of Object.keys(media)){
 }
 for(const kind of ['video','audio'])$('#'+kind+'-enabled').onchange=()=>{$('#'+kind+'-body').hidden=!$('#'+kind+'-enabled').checked;renderTags()};
 $('#video-audio').onchange=renderTags;
+function updateAttentionHelp(){
+  $('#attention-help').textContent=$('#attention-mode').value==='kj_memory'
+    ?'ลด peak VRAM แต่อาจช้ากว่า เหมาะเมื่อ Global Sage มีปัญหาหน่วยความจำ'
+    :'ใช้ Global Sage แบบเดียวกับ RunPod เหมาะกับ RTX 5090';
+}
+$('#attention-mode').onchange=updateAttentionHelp;updateAttentionHelp();
 function randomSeed(){const values=new Uint32Array(1);crypto.getRandomValues(values);return values[0]}
 function validSeed(){const seed=Number($('#seed').value);return Number.isInteger(seed)&&seed>=0&&seed<=4294967295}
 function updateSeedControls(){
@@ -60,7 +84,7 @@ async function systemStatus(){
   try{const response=await fetch('/api/kendo/status',{cache:'no-store'});if(!response.ok)throw new Error();const s=await response.json();ready=s.models_ready&&s.comfy_ready;updateButton();$('#status').textContent=ready?'READY':s.download_error?'DOWNLOAD ERROR':'PREPARING';$('#progress').hidden=ready;$('#progress').value=s.progress||0;
     if(s.comfy_url)document.querySelectorAll('.comfy-link').forEach(link=>link.href=s.comfy_url);
     if(!submitting&&!jobs.size)notice(s.download_error?'ดาวน์โหลดสะดุด กรุณา Restart Pod เพื่อดาวน์โหลดต่อ':!s.models_ready?`กำลังดาวน์โหลดโมเดล ${s.progress}%`:!s.comfy_ready?'กำลังเริ่ม ComfyUI':'ระบบพร้อมสร้างวิดีโอ');
-    renderClaude(s);
+    renderRuntime(s.runtime);renderClaude(s);
   }catch{ready=false;updateButton();$('#status').textContent='OFFLINE'}
 }
 async function refreshQueue(){
@@ -90,7 +114,8 @@ async function refreshConsole(){
     const response=await fetch('/api/kendo/logs',{cache:'no-store'});if(!response.ok)throw new Error();
     const data=await response.json(),view=$('#comfy-console');
     const follow=view.scrollHeight-view.scrollTop-view.clientHeight<48;
-    view.textContent=data.available?(data.text||'ComfyUI เริ่มทำงานแล้ว · ยังไม่มีข้อความ Log'):'ยังไม่พบไฟล์ Log ของ ComfyUI';
+    const gpu=data.gpu_text?`\n\n===== GPU PERFORMANCE (ล่าสุด) =====\n${data.gpu_text}`:'';
+    view.textContent=data.available?((data.text||'ComfyUI เริ่มทำงานแล้ว · ยังไม่มีข้อความ Log')+gpu):'ยังไม่พบไฟล์ Log ของ ComfyUI';
     $('#console-state').textContent=data.available?'อัปเดตอัตโนมัติทุก 2 วินาที':'กำลังรอ ComfyUI เริ่มทำงาน…';
     if(follow)view.scrollTop=view.scrollHeight;
   }catch{$('#console-state').textContent='อ่าน Log ไม่สำเร็จ'}
@@ -122,9 +147,9 @@ async function generate(){
   const seed=$('#seed-lock').checked?Number($('#seed').value):randomSeed();
   lastSeed=seed;$('#seed').value=String(seed);$('#reuse-latest-seed').hidden=false;$('#reuse-latest-seed').textContent='ใช้ Seed ล่าสุดต่อ · '+seed;
   const selected={images:media.image.map(x=>x.file),videos:$('#video-enabled').checked?media.video.map(x=>x.file):[],audios:$('#audio-enabled').checked?media.audio.map(x=>x.file):[]};
-  const settings={prompt,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),seed,videoAudio:$('#video-audio').checked};
+  const settings={prompt,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),seed,videoAudio:$('#video-audio').checked,attentionMode:$('#attention-mode').value};
   try{KendoWorkflow.buildWorkflow({...settings,images:[],videos:[],audios:[]})}catch(e){return notice(e.message)}
   submitting=true;updateButton();notice('กำลังอัปโหลดไฟล์…');
   try{const names={};for(const [kind,files] of Object.entries(selected)){names[kind]=[];for(const file of files)names[kind].push(await upload(file))}const workflow=KendoWorkflow.buildWorkflow({...settings,...names});const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});if(!result.prompt_id)throw new Error('ไม่พบหมายเลขงาน');jobs.set(result.prompt_id,true);$('#activity').textContent=`${jobs.size} งานในคิว`;notice('ส่งเข้าคิวแล้ว · Seed '+seed);void monitor(result.prompt_id,seed)}catch(e){notice(String(e.message))}finally{submitting=false;updateButton()}
 }
-$('#generate').onclick=generate;renderHistory();void systemStatus();setInterval(systemStatus,5000);void refreshQueue();setInterval(refreshQueue,2000);void syncServerHistory();setInterval(syncServerHistory,20000);setInterval(refreshConsole,2000);
+$('#generate').onclick=generate;renderRuntime();renderHistory();void systemStatus();setInterval(systemStatus,5000);void refreshQueue();setInterval(refreshQueue,2000);void syncServerHistory();setInterval(syncServerHistory,20000);setInterval(refreshConsole,2000);

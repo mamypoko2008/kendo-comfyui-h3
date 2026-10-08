@@ -2,6 +2,19 @@
 
 Separate beta release. Existing v1 and v2 images and RunPod templates remain unchanged.
 
+## beta.14 — GPU auto-detect + verified Sage status
+
+- Detects the assigned GPU name, VRAM, driver, and CUDA compute capability at
+  every Pod start. RTX 5090 and RTX PRO 6000 Blackwell are both recognized as
+  `sm_120` rather than being selected by a hard-coded product name.
+- Verifies that the baked `sageattention` package imports successfully before
+  adding ComfyUI's global `--use-sage-attention` flag.
+- Falls back to Native attention and removes the Sage flag when the GPU is not
+  compatible or the import fails, preventing an avoidable ComfyUI startup crash.
+- The Page reports the detected GPU and either `Sage Global · ACTIVE` or
+  `Native · FALLBACK`; hovering the badges shows driver/probe details.
+- Existing V2 and V4 templates are not changed.
+
 ## beta.13 — RunPod UI refresh + public MCP bind
 
 - Image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.13`

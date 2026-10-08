@@ -77,6 +77,9 @@ summary { font-size: 12px; font-weight: 600; color: var(--text); }
 .steps-control { display: grid; grid-template-columns: 1fr 76px; align-items: center; gap: 8px; color: var(--text); }
 .steps-control small { grid-column: 1 / -1; }
 #steps { width: 76px; }
+.attention-control { display: grid; gap: 4px; color: var(--text); }
+.attention-control select { margin-top: 2px; }
+.attention-control small { line-height: 1.5; }
 .seed-card { padding: 12px; border: 1px solid color-mix(in srgb, var(--red) 25%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--soft) 45%, var(--panel)); }
 .seed-card .row > div { display: grid; gap: 2px; }
 .seed-card .row small { margin-left: 0; }
@@ -90,6 +93,10 @@ summary { font-size: 12px; font-weight: 600; color: var(--text); }
 #notice { font-size: 12px; line-height: 1.6; color: var(--muted); overflow-wrap: anywhere; }
 .content { padding: 25px 32px; min-width: 0; }
 #status { font-size: 11px; color: var(--muted); }
+.runtime-state { display: flex; align-items: center; gap: 8px; }
+#attention-status, #gpu-status { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 10px; letter-spacing: .25px; }
+#attention-status.active { border-color: color-mix(in srgb, #20b26b 55%, var(--line)); background: color-mix(in srgb, #20b26b 12%, transparent); color: #20b26b; }
+#attention-status.fallback { border-color: color-mix(in srgb, #e0a11a 55%, var(--line)); background: color-mix(in srgb, #e0a11a 10%, transparent); color: #d39a20; }
 #preview { margin: 20px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; }
 #welcome { text-align: center; padding: 50px 20px; }
 #welcome h2 { font-size: 25px; letter-spacing: -.5px; }

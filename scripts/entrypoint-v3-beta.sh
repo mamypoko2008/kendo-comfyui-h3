@@ -7,6 +7,16 @@ if ! grep -q -- '--max-upload-size' "$args_file"; then
   echo '--max-upload-size 512' >> "$args_file"
 fi
 
+# Detect the assigned GPU and enable the baked sm_120 Sage kernel only when it
+# imports successfully on a compatible Blackwell card.
+if python3.12 /opt/kendo/detect_runpod_runtime.py; then
+  export KENDO_ENABLE_SAGE=1
+else
+  # The inherited entrypoint also reads this variable. Keep it from adding the
+  # Sage flag back after this probe deliberately selected Native fallback.
+  export KENDO_ENABLE_SAGE=0
+fi
+
 # Claude connection code: honour the template env, otherwise keep one per
 # workspace so the URL students pasted survives Pod restarts on the same volume.
 code_file="${KENDO_MCP_CODE_FILE:-/workspace/.kendo-mcp-code}"

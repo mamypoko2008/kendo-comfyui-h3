@@ -10,7 +10,7 @@ except ModuleNotFoundError:
     import page_server as base
 import models_v3_beta as models
 
-VERSION = '3.0.0-beta.13'
+VERSION = '3.0.0-beta.14'
 MCP_BIND_HOST = os.environ.get('KENDO_MCP_HOST', '127.0.0.1')
 MCP_HOST = '127.0.0.1' if MCP_BIND_HOST in ('0.0.0.0', '::') else MCP_BIND_HOST
 MCP_PORT = int(os.environ.get('KENDO_MCP_PORT', '3001'))
@@ -18,6 +18,8 @@ COMFY_PORT = int(os.environ.get('KENDO_COMFY_PORT', '8188'))
 MCP_CODE_FILE = os.environ.get('KENDO_MCP_CODE_FILE', '/workspace/.kendo-mcp-code')
 LOG_PATH = '/api/kendo/logs'
 COMFY_LOG_FILE = os.environ.get('KENDO_COMFY_LOG_FILE', '')
+GPU_LOG_FILE = os.environ.get('KENDO_GPU_LOG_FILE', '')
+RUNTIME_FILE = os.environ.get('KENDO_RUNTIME_FILE', '/workspace/kendo-runtime.json')
 MAX_LOG_BYTES = 192 * 1024
 
 def mcp_code():
@@ -49,7 +51,21 @@ def comfy_url():
         return f'https://{pod}-{COMFY_PORT}.proxy.runpod.net/'
     return f'http://127.0.0.1:{COMFY_PORT}/'
 
+def runtime_status():
+    try:
+        with open(RUNTIME_FILE, encoding='utf-8') as stream:
+            return json.load(stream)
+    except (OSError, ValueError):
+        return {'attention': 'กำลังตรวจสอบ', 'gpu': {'name': 'กำลังตรวจสอบ'},
+                'sage': {'active': False, 'reason': 'runtime probe pending'}}
+
 class V3Handler(base.KendoPageHandler):
+    def end_headers(self):
+        path = urlsplit(self.path).path
+        if path in ('/v3-beta.html', '/v3-beta.js', '/workflow-v3-beta.js', '/runtime-v4-local.js'):
+            self.send_header('Cache-Control', 'no-store')
+        super().end_headers()
+
     def do_GET(self):
         if urlsplit(self.path).path == LOG_PATH:
             self._send_comfy_logs()
@@ -72,7 +88,17 @@ class V3Handler(base.KendoPageHandler):
                 available = True
             except OSError:
                 pass
-        payload = json.dumps({'available': available, 'text': text}).encode('utf-8')
+        gpu_text = ''
+        if GPU_LOG_FILE:
+            try:
+                with open(GPU_LOG_FILE, 'rb') as stream:
+                    stream.seek(0, os.SEEK_END)
+                    size = stream.tell()
+                    stream.seek(max(0, size - 8192))
+                    gpu_text = stream.read(8192).decode('utf-8', errors='replace')
+            except OSError:
+                pass
+        payload = json.dumps({'available': available, 'text': text, 'gpu_text': gpu_text}).encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Cache-Control', 'no-store')
@@ -109,7 +135,7 @@ class V3Handler(base.KendoPageHandler):
             download_error=error, downloaded_bytes=downloaded, total_bytes=total,
             progress=round(downloaded * 100 / total, 1), version=VERSION,
             mcp_ready=self._mcp_ready(), mcp_url=mcp_url(),
-            comfy_url=comfy_url())).encode()
+            comfy_url=comfy_url(), runtime=runtime_status())).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
