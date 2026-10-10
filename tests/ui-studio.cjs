@@ -60,70 +60,21 @@ const output=path.resolve(__dirname,'../studio-preview');
     await p.locator('#confirm-generate').click();await p.waitForFunction(()=>document.querySelector('#job-notice').textContent.includes('ส่งงานแล้ว'));
     assert.equal(paid.length,1);assert.equal(paid[0].model,'seedance-2');assert.equal(paid[0].confirm_cost,true);
 
-    await p.goto(url+'/images.html');await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('ยังเชื่อมต่อ'));
-    assert.equal(await p.locator('.reference-slot').count(),3);
-    await p.locator('#prompt').fill('A realistic ceramic cup');await p.locator('#generate').click();
-    assert.equal(await p.locator('#confirm-image').isVisible(),false);await p.locator('.review-done').click();
-    await p.screenshot({path:path.join(output,'images-desktop.png'),fullPage:true});
-    const info=Object.fromEntries(model.REQUIRED.map(n=>[n,{}]));
-    info.UNETLoader={input:{required:{unet_name:[[model.MODELS['qwen21-turbo'].diffusion,model.MODELS.qwen21.diffusion]]}}};
-    info.CLIPLoader={input:{required:{clip_name:[[model.ENCODER]]}}};info.VAELoader={input:{required:{vae_name:[[model.VAE]]}}};
-    let local=[];
-    await p.route('**/api/comfy/**',async route=>{
-      const req=route.request(),pathname=new URL(req.url()).pathname;
-      let data={};
-      if(pathname.endsWith('/object_info')) data=info;
-      if(pathname.endsWith('/upload/image')) data={name:'uploaded-ref.png',subfolder:'',type:'input'};
-      if(pathname.endsWith('/prompt')) {local.push(req.postDataJSON());data={prompt_id:`image-test-0${local.length}`};}
-      if(pathname.endsWith('/history/image-test-01')) data={'image-test-01':{status:{completed:true,status_str:'success'},outputs:{8:{images:[{filename:'test-result.png',subfolder:'',type:'output'}]}}}};
-      if(pathname.endsWith('/history/image-test-02')) data={'image-test-02':{status:{completed:true,status_str:'success'},outputs:{161:{images:[{filename:'Kendo_Qwen21_Klein_before_00001.png',type:'output'}]},162:{images:[{filename:'Kendo_Qwen21_Klein_after_00001.png',type:'output'}]}}}};
-      if(pathname.endsWith('/view')) return route.fulfill({contentType:'image/png',body:fixture});
-      await route.fulfill({json:data});
-    });
-    await p.locator('#connection-refresh').click();await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('พร้อมสร้าง'));
-    await p.locator('.upload-input input').first().setInputFiles(refs(2));
-    await p.waitForFunction(()=>document.querySelector('#image-count').textContent==='2 / 10');
-    assert.equal(await p.locator('#ratio').isDisabled(),true);
-    await p.locator('#transparent').check();await p.locator('#generate').click();assert.equal(local.length,0);
-    await p.locator('#confirm-image').click();await p.waitForFunction(()=>document.querySelector('#job-notice').textContent.includes('ส่งงานแล้ว'));
-    assert.equal(local.length,1);assert.deepEqual(local[0].prompt['6'].inputs.latent_image,['4',2]);
-    assert.match(local[0].prompt['4'].inputs.prompt,/RGBA/);
-    await p.locator('#history-results').getByText('ดูภาพ',{exact:true}).waitFor();
-    assert.equal(await p.locator('#preview-canvas>img').count(),1);
-    await p.locator('#image-model').selectOption('qwen21-klein');
-    assert.equal(await p.locator('.remove-image').count(),2);
-    assert.equal(await p.locator('#transparent').isDisabled(),true);
-    assert.equal(await p.locator('#image-steps').inputValue(),'30');
-    assert.equal(await p.locator('#resolution').inputValue(),'2048');
-    await p.locator('#generate').click();assert.equal(await p.locator('#review-dialog').isVisible(),false);assert.equal(local.length,1);
-    await p.locator('.remove-image').last().click();await p.locator('.remove-image').last().click();
-    await p.locator('#generate').click();assert.equal(await p.locator('#confirm-image').isVisible(),false);await p.locator('.review-done').click();
-    for(const n of model.KLEIN_REQUIRED) info[n]??={};
-    info.UNETLoader.input.required.unet_name[0].push(model.MODELS['qwen21-klein'].diffusion,model.KLEIN.diffusion);
-    info.CLIPLoader.input.required.clip_name[0].push(model.MODELS['qwen21-klein'].encoder,model.KLEIN.encoder);
-    info.VAELoader.input.required.vae_name[0].push(model.KLEIN.vae);
-    await p.locator('#connection-refresh').click();await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('พร้อมสร้าง'));
-    await p.locator('#attached-lora').check();
-    await p.locator('#generate').click();assert.equal(await p.locator('#confirm-image').isVisible(),false);await p.locator('.review-done').click();
-    await p.locator('#attached-lora').uncheck();await p.locator('#generate').click();assert.equal(local.length,1);
-    await p.locator('#confirm-image').click();await p.waitForFunction(()=>document.querySelector('#job-notice').textContent.includes('image-test-02'));
-    assert.equal(local.length,2);assert.equal(local[1].prompt['53'].inputs.steps,2);
-    await p.locator('#history-results').getByText('หลัง Flux Klein',{exact:true}).waitFor();
-    assert.ok((await p.locator('#preview-canvas>img').getAttribute('src')).includes('Klein_after'));
-    await p.screenshot({path:path.join(output,'images-klein-desktop.png'),fullPage:true});
-    await p.locator('#theme').click();await p.screenshot({path:path.join(output,'images-dark.png'),fullPage:true});
+    assert.equal(await p.locator('nav a[href="./images.html"]').count(),0);
+    await p.goto(url+'/images.html?model=qwen21-klein');
+    await p.waitForURL('**/seedance25.html');
+    assert.equal(await p.locator('#video-model').count(),1);
+    assert.equal(await p.locator('#image-model').count(),0);
+    await p.screenshot({path:path.join(output,'video-only-desktop.png'),fullPage:true});
+    await p.locator('#theme').click();
+    await p.screenshot({path:path.join(output,'video-only-dark.png'),fullPage:true});
     for(const width of [390,320]) {
       await p.setViewportSize({width,height:1100});
-      for(const name of ['images.html','seedance25.html']) {
-        await p.goto(url+'/'+name);await p.waitForTimeout(120);
-        assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${name} ${width}px overflow`);
-        assert.equal(await p.locator('nav a[href="./images.html"]').isVisible(),true);
-        await p.screenshot({path:path.join(output,`${name.split('.')[0]}-mobile-${width}.png`),fullPage:true});
-      }
-      await p.goto(url+'/images.html');await p.locator('#image-model').selectOption('qwen21-klein');
-      assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`Klein ${width}px overflow`);
-      await p.screenshot({path:path.join(output,`images-klein-mobile-${width}.png`),fullPage:true});
+      await p.goto(url+'/seedance25.html');
+      assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`video-only ${width}px overflow`);
+      assert.equal(await p.locator('nav a[href="./images.html"]').count(),0);
+      await p.screenshot({path:path.join(output,`video-only-mobile-${width}.png`),fullPage:true});
     }
-    assert.deepEqual(errors,[]);console.log('Studio UI passed: both models, price/limits, retained refs, confirmations, mocked local generation, results, dark theme, 320/390px layouts.');
+    assert.deepEqual(errors,[]);console.log('Studio UI passed: Seedance models, price/limits, paid confirmation, Qwen bookmark redirect, dark theme, 320/390px layouts.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

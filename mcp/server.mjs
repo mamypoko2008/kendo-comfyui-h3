@@ -29,6 +29,7 @@ const CONFIG = {
   workflowFile: env('KENDO_WORKFLOW_FILE', '/opt/kendo-page/workflow-v3-beta.js'),
   publicPage: env('KENDO_PUBLIC_PAGE_URL', process.env.RUNPOD_POD_ID ? `https://${process.env.RUNPOD_POD_ID.trim()}-${env('KENDO_PAGE_PORT', '3000')}.proxy.runpod.net` : ''),
   maxUploadBytes: 512 * 1024 * 1024,
+  enableImages: env('KENDO_ENABLE_IMAGES', '1') === '1',
   // Tests serve fixtures from loopback; never enable this on a Pod.
   allowLoopback: env('KENDO_MCP_ALLOW_LOOPBACK', '0') === '1'
 };
@@ -176,13 +177,13 @@ const guard = handler => async (args, extra) => {
 
 const INSTRUCTIONS = `Kendo Studio MiniMax H3 video generator running inside a RunPod Pod.
 Typical flow: (1) kendo_status until models_ready and comfy_ready are true. (2) Put reference files into the Pod with kendo_upload_from_url (any public image/video/audio URL, e.g. results from an image generator) or read the files the user uploaded on the Page with kendo_list_references. (3) kendo_generate with the prompt; refer to references inside the prompt as <Picture 1>, <Picture 2> (order of the images array), <Video 1>, and <Audio 1..3> (video soundtrack first when video_audio is true, then standalone audios). (4) Poll kendo_job_status every 15-30 seconds until status is done, then give the user the video_url. Generation usually takes a few minutes; never block on it.
-KIE video flow: kie_status, then kie_seedance_generate (seedance-2 is regular 2.0; seedance-2-5 is 2.5). Only set confirm_cost=true for a user-authorized paid request; poll kie_job_status. Do not automatically recreate a task after connection failures.
-Local Qwen image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Qwen uses no KIE credits. All tools share this MCP URL.`;
+KIE video flow: kie_status, then kie_seedance_generate (seedance-2 is regular 2.0; seedance-2-5 is 2.5). Only set confirm_cost=true for a user-authorized paid request; poll kie_job_status. Do not automatically recreate a task after connection failures. All tools share this MCP URL.`;
 
-function createServer() {
-  const server = new McpServer({ name: process.env.KENDO_MCP_NAME || 'kendo-h3', version: VERSION }, { instructions: INSTRUCTIONS });
+function createServer({ enableImages = CONFIG.enableImages } = {}) {
+  const instructions = INSTRUCTIONS + (enableImages ? '\nLocal Qwen image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Qwen uses no KIE credits.' : '');
+  const server = new McpServer({ name: process.env.KENDO_MCP_NAME || 'kendo-h3', version: VERSION }, { instructions });
   registerKieTools(server);
-  registerImageTools(server);
+  if (enableImages) registerImageTools(server);
 
   server.registerTool('kendo_status', {
     title: 'Kendo status',
@@ -303,7 +304,8 @@ function codeMatches(candidate) {
 }
 
 export function createHttpServer(config = {}) {
-  Object.assign(CONFIG, config);
+  const { enableImages = CONFIG.enableImages, ...serverConfig } = config;
+  Object.assign(CONFIG, serverConfig);
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true, version: VERSION });
@@ -312,7 +314,7 @@ export function createHttpServer(config = {}) {
     // start an OAuth discovery flow against this server.
     if (!match || !codeMatches(decodeURIComponent(match[1]))) return sendJson(res, 404, { error: 'Not found' });
     if (req.method !== 'POST') return sendJson(res, 405, { jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed. Use POST (stateless Streamable HTTP).' }, id: null });
-    const server = createServer();
+    const server = createServer({ enableImages });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on('close', () => { transport.close().catch(() => {}); server.close().catch(() => {}); });
     try {

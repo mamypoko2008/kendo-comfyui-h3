@@ -21,4 +21,4 @@ RUN if [ ! -d /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon/.git ]; then
        -r /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon/requirements.txt \
        -r /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes/requirements.txt
 COPY web/seedance25.html /opt/kendo-page/index.html
-ENV KENDO_IMAGE_MODELS=qwen21-turbo KENDO_IMAGE_VERSION=3.1.0-studio.1 KENDO_AUTO_DOWNLOAD_MODELS=0 KENDO_MCP_NAME="Kendo-Seedance 2.5+Qwen"
+ENV KENDO_ENABLE_IMAGES=0 KENDO_IMAGE_MODELS="" KENDO_IMAGE_VERSION=3.1.0-studio.2 KENDO_AUTO_DOWNLOAD_MODELS=0 KENDO_MCP_NAME="Kendo-Seedance 2.5"

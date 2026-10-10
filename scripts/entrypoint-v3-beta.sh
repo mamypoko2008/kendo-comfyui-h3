@@ -34,8 +34,8 @@ echo "[KENDO v3 beta] Claude MCP server listening on ${KENDO_MCP_HOST}:${KENDO_M
 
 nohup /opt/node/bin/node /opt/kendo-mcp/studio-server.mjs \
   > /workspace/kendo-studio.log 2>&1 &
-echo '[KENDO Studio] Seedance: /seedance25.html; local Qwen images: /images.html'
-if [[ -n "${KENDO_IMAGE_MODELS:-}" ]]; then
+echo '[KENDO Studio] Seedance: /seedance25.html'
+if [[ "${KENDO_ENABLE_IMAGES:-1}" == "1" && -n "${KENDO_IMAGE_MODELS:-}" ]]; then
   # The downloader must not create a partial ComfyUI tree before the inherited
   # entrypoint checks whether the baked core needs to be copied to a fresh volume.
   if [[ ! -d /workspace/runpod-slim/ComfyUI ]]; then

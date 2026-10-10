@@ -1,14 +1,17 @@
 # Kendo-Seedance 2.5+Qwen (V3.1)
 
+Studio `v3.1.0-studio.2` pauses local Qwen image generation. The website now offers Seedance video only; old `/images.html` bookmarks redirect to `/seedance25.html`. Studio sets `KENDO_ENABLE_IMAGES=0`, hides the Qwen MCP tools and skips automatic Qwen model downloads. Existing ComfyUI, KIE tools, the MCP access URL and installed model files are retained. ComfyUI and KIE still share one MCP on port 3001. The RunPod template keeps its existing name and ID.
+
 Published on 2026-10-10: [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8), image `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.1`. [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38056814904) succeeded; the image's public pull, amd64 platform, version, entrypoint and title were verified. Image digest: `sha256:72778aa0a721a0eee826cc02b6ed9b4e032b70a143bc39be78e481db915d288f`. The template is public, with 100 GB container disk and 100 GB persistent volume. GPU inference remains unvalidated; no Pod was launched during publication.
 
-Pages share the V3 light/dark design:
+The video page uses the V3 light/dark design:
 
 - `/seedance25.html`: Seedance 2.5 or **regular** Seedance 2.0 via KIE. Review and confirm the price before submitting. The selector changes price, duration and reference limits. Images/text only; video-input billing is not included in these estimates.
-- `/images.html`: Qwen Image **2.1 Turbo** or the standard 2.1 model on the RunPod GPU through native ComfyUI. Text-to-image, up to 10 image references, PNG, transparency, 1/4 megapixel target, steps and seed. Editing follows the first reference's aspect ratio, matching the native encoder's latent output.
-  The additional **Qwen 2.1 + Flux Klein 9B** selector adapts the user's attached workflow; see its setup below.
+- `/images.html`: redirects to the video page. Local Qwen creation is paused.
 
-## Attached Qwen 2.1 + Flux Klein workflow
+## Archived Qwen 2.1 + Flux Klein workflow
+
+The Qwen setup below documents the previous image experiment; it is disabled in the current Studio release.
 
 The page and `kendo_image_generate(model="qwen21-klein")` share the same graph builder. This profile uses Qwen BF16, the FP8 Qwen3-VL encoder, Detail Daemon, 30 Euler/simple steps at CFG 1, sharpen, scaling to approximately 4 MP, Flux Klein 9B with reference latents and 2 Euler steps, color match at strength 0.8, then sharpen. PNGs before and after Flux Klein are saved separately and appear with labeled buttons in history. The same explicit seed is used in both stages for repeatability; the attachment had a separate randomized Flux seed.
 

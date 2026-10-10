@@ -1,0 +1,9 @@
+# Reuse the published runtime; this release only disables the Qwen product flow.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.1
+COPY web/seedance25.html /opt/kendo-page/seedance25.html
+COPY web/seedance25.html /opt/kendo-page/index.html
+COPY web/images.html /opt/kendo-page/images.html
+COPY mcp/server.mjs /opt/kendo-mcp/server.mjs
+COPY scripts/entrypoint-v3-beta.sh /opt/kendo/entrypoint-v3-beta.sh
+RUN chmod 0755 /opt/kendo/entrypoint-v3-beta.sh
+ENV KENDO_ENABLE_IMAGES=0 KENDO_IMAGE_MODELS="" KENDO_IMAGE_VERSION=3.1.0-studio.2 KENDO_AUTO_DOWNLOAD_MODELS=0 KENDO_MCP_NAME="Kendo-Seedance 2.5"

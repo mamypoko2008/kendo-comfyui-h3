@@ -80,6 +80,26 @@ test('exposes the Kendo tool set and instructions', async () => {
   assert.match(client.getInstructions(), /<Picture 1>/);
 });
 
+test('video-only Studio keeps ComfyUI and KIE in one MCP without exposing Qwen generation', async () => {
+  const { createHttpServer } = await import('../mcp/server.mjs');
+  const httpServer = createHttpServer({ enableImages: false });
+  const port = await listen(httpServer);
+  const videoClient = new Client({ name: 'video-only-test', version: '0' });
+  try {
+    await videoClient.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp/${CODE}`)));
+    const names = (await videoClient.listTools()).tools.map(t => t.name);
+    assert.ok(names.includes('kendo_generate'));
+    assert.ok(names.includes('kie_seedance_generate'));
+    assert.equal(names.some(name => name.startsWith('kendo_image_')), false);
+    assert.doesNotMatch(videoClient.getInstructions(), /Local Qwen image flow/);
+    const blocked = await videoClient.callTool({ name: 'kendo_image_generate', arguments: { prompt: 'A cup' } });
+    assert.equal(blocked.isError, true);
+  } finally {
+    await videoClient.close();
+    await new Promise(resolve => httpServer.close(resolve));
+  }
+});
+
 test('status reports readiness and the queue', async () => {
   const { data } = await call('kendo_status');
   assert.equal(data.ready, true);

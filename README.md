@@ -9,7 +9,7 @@ One-click RunPod image for MiniMax H3 on RTX 5090 and RTX PRO 6000 Blackwell.
 | v1 | `Dockerfile`, `web/index.html`, `scripts/entrypoint.sh` | Original image; see below |
 | v2 (stable) | `Dockerfile.v2`, `web/v2.*`, `scripts/*_v2*`, [RELEASE_V2.md](RELEASE_V2.md) | Ref2VA Turbo studio |
 | v3 beta | `Dockerfile.v3-beta`, `web/v3-beta.*`, `mcp/`, [RELEASE_V3_BETA.md](RELEASE_V3_BETA.md) | v2 clone + in-Pod Claude MCP server on port 3001; student guide in [CLAUDE_CONNECT_TH.md](CLAUDE_CONNECT_TH.md) |
-| Kendo-Seedance 2.5+Qwen (v3.1) | `Dockerfile.studio`, `web/seedance25.*`, `web/images.*`, [STUDIO.md](STUDIO.md) | [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8): Seedance 2.0/2.5 through KIE, local Qwen Image 2.1, optional Qwen + Flux Klein workflow, shared MCP |
+| Kendo-Seedance 2.5+Qwen (v3.1) | `Dockerfile.studio`, `web/seedance25.*`, [STUDIO.md](STUDIO.md) | [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8): Seedance 2.0/2.5 through KIE; Qwen image generation paused in studio.2; ComfyUI and KIE share one MCP |
 
 Each line has its own GitHub Actions workflow triggered by its tag pattern
 (`v2.*`, `v3.*-beta.*`) and its own RunPod template JSON. Change one line at a time.

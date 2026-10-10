@@ -1,6 +1,11 @@
 name: Build Kendo-Seedance 2.5+Qwen
 on:
   workflow_dispatch:
+    inputs:
+      reuse_studio_runtime:
+        description: Reuse studio.1 for the video-only studio.2 release
+        type: boolean
+        default: false
   push:
     tags:
       - 'v3.1.*-studio.*'
@@ -31,13 +36,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build the shared V3 base and Studio runtime
+        env:
+          REUSE_STUDIO_RUNTIME: ${{ inputs.reuse_studio_runtime }}
         run: |
-          docker build -f Dockerfile.v3-beta -t kendo-comfyui-h3:studio-base .
-          docker build -f Dockerfile.studio --label org.opencontainers.image.title="Kendo-Seedance 2.5+Qwen" --label org.opencontainers.image.revision="${GITHUB_SHA}" -t kendo-comfyui-h3:studio .
+          if [ "$REUSE_STUDIO_RUNTIME" = "true" ]; then
+            docker build -f Dockerfile.studio-update --label org.opencontainers.image.title="Kendo-Seedance 2.5" --label org.opencontainers.image.revision="${GITHUB_SHA}" -t kendo-comfyui-h3:studio .
+          else
+            docker build -f Dockerfile.v3-beta -t kendo-comfyui-h3:studio-base .
+            docker build -f Dockerfile.studio --label org.opencontainers.image.title="Kendo-Seedance 2.5" --label org.opencontainers.image.revision="${GITHUB_SHA}" -t kendo-comfyui-h3:studio .
+          fi
       - name: Publish Studio image
         env:
           IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3
-          IMAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v3.1.0-studio.1' }}
+          IMAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v3.1.0-studio.2' }}
         run: |
           docker tag kendo-comfyui-h3:studio "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"
           docker push "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"
