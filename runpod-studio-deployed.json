@@ -1,9 +1,9 @@
 {
   "id": "9k0w23cmt8",
   "name": "Kendo-Seedance 2.5+Qwen",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.1",
-  "imageDigest": "sha256:72778aa0a721a0eee826cc02b6ed9b4e032b70a143bc39be78e481db915d288f",
-  "sourceCommit": "69eb9850af16c7f3be067b72cc58a7fc52ca1ade",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.2",
+  "imageDigest": "sha256:b93b1f1614135f4c168450824106904b711bad0eb3dff2a122946a4bbb99f469",
+  "sourceCommit": "6b4060c20e2a85f9fbf39a9bd0e7f4b7a02353b8",
   "containerDiskInGb": 100,
   "volumeInGb": 100,
   "volumeMountPath": "/workspace",
@@ -15,17 +15,36 @@
     "22/tcp"
   ],
   "portsConfig": [
-    { "port": "3000", "name": "Page HTML" },
-    { "port": "3001", "name": "Comfy MCP" },
-    { "port": "8188", "name": "ComfyUI" },
-    { "port": "8888", "name": "JupyterLab" },
-    { "port": "22", "name": "SSH" }
+    {
+      "port": "22",
+      "name": "SSH"
+    },
+    {
+      "port": "3000",
+      "name": "Page HTML"
+    },
+    {
+      "port": "3001",
+      "name": "Comfy MCP"
+    },
+    {
+      "port": "8188",
+      "name": "ComfyUI"
+    },
+    {
+      "port": "8888",
+      "name": "JupyterLab"
+    }
   ],
-  "serviceNamesVerifiedOnPod": "ok4dx1nsvkpvlm",
+  "serviceNamesVerifiedBeforeUpdateOnPod": "ok4dx1nsvkpvlm",
+  "updateAppliedToTemplateOnly": true,
   "isPublic": true,
   "templateUrl": "https://console.runpod.io/hub/template/9k0w23cmt8",
-  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38056814904",
+  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38059654529",
   "publicImagePullVerified": true,
   "gpuInferenceValidated": false,
-  "deployedAt": "2026-10-10T13:50:34.8525640Z"
+  "deployedAt": "2026-10-10T14:34:49.1619827+00:00",
+  "localQwenEnabled": false,
+  "automaticQwenDownload": false,
+  "otherTemplatesVerifiedUnchanged": 19
 }
