@@ -14,6 +14,14 @@
     "8888/http",
     "22/tcp"
   ],
+  "portsConfig": [
+    { "port": "3000", "name": "Page HTML" },
+    { "port": "3001", "name": "Comfy MCP" },
+    { "port": "8188", "name": "ComfyUI" },
+    { "port": "8888", "name": "JupyterLab" },
+    { "port": "22", "name": "SSH" }
+  ],
+  "serviceNamesVerifiedOnPod": "ok4dx1nsvkpvlm",
   "isPublic": true,
   "templateUrl": "https://console.runpod.io/hub/template/9k0w23cmt8",
   "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38056814904",

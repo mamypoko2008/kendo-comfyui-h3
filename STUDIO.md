@@ -42,6 +42,8 @@ Use a fresh RunPod ComfyUI workspace for this image. The inherited entrypoint re
 
 The `Build Kendo-Seedance 2.5+Qwen` GitHub workflow builds and publishes `v3.1.0-studio.1` when manually dispatched, or a `v3.1.*-studio.*` tag when pushed. `runpod-studio.json` describes a separate RunPod template named **Kendo-Seedance 2.5+Qwen** using the published image; release results are recorded in `runpod-studio-deployed.json` after verification.
 
+The published template's Connect service names are **Page HTML** (3000), **Comfy MCP** (3001), **ComfyUI** (8188), **JupyterLab** (8888), and **SSH** (22). These are RunPod template `portsConfig` values, separate from the exposed `ports` list. REST v1 does not accept `portsConfig`; apply the names through the template editor or GraphQL `saveTemplate` when recreating this template. The HTTP labels were verified on the running `ok4dx1nsvkpvlm` Pod without restarting it.
+
 The Studio image pins ComfyUI to `0df64eb242b7c5759c3e86afd5d1846d923b1033`. It downloads the Turbo INT8 model, 8B INT8 encoder and Qwen 2.1 VAE on first boot: **17.28 GB** in total. Files are retained on the volume and reused when their sizes match. It requires no new public port: pages and `/api/kie` stay on 3000; MCP stays on 3001. Studio's internal service listens on loopback 8766.
 
 The Studio landing page is the Seedance page. H3 model downloads are off by default for this image; set `KENDO_AUTO_DOWNLOAD_MODELS=1` to retain local H3 generation as well.
