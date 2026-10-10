@@ -5,3 +5,7 @@
 models/
 output/
 __pycache__/
+node_modules/
+**/node_modules/
+studio-preview/
+.kendo-kie/

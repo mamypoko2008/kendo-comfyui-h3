@@ -10,11 +10,12 @@ except ModuleNotFoundError:
     import page_server as base
 import models_v3_beta as models
 
-VERSION = '3.0.0-beta.15'
+VERSION = os.environ.get('KENDO_IMAGE_VERSION', '3.0.0-beta.15')
 MCP_BIND_HOST = os.environ.get('KENDO_MCP_HOST', '127.0.0.1')
 MCP_HOST = '127.0.0.1' if MCP_BIND_HOST in ('0.0.0.0', '::') else MCP_BIND_HOST
 MCP_PORT = int(os.environ.get('KENDO_MCP_PORT', '3001'))
 COMFY_PORT = int(os.environ.get('KENDO_COMFY_PORT', '8188'))
+STUDIO_PORT = int(os.environ.get('KENDO_STUDIO_PORT', '8766'))
 MCP_CODE_FILE = os.environ.get('KENDO_MCP_CODE_FILE', '/workspace/.kendo-mcp-code')
 LOG_PATH = '/api/kendo/logs'
 COMFY_LOG_FILE = os.environ.get('KENDO_COMFY_LOG_FILE', '')
@@ -67,10 +68,47 @@ class V3Handler(base.KendoPageHandler):
         super().end_headers()
 
     def do_GET(self):
+        if urlsplit(self.path).path.startswith('/api/kie/'):
+            self._proxy_to_studio()
+            return
         if urlsplit(self.path).path == LOG_PATH:
             self._send_comfy_logs()
             return
         super().do_GET()
+
+    def do_POST(self):
+        if urlsplit(self.path).path.startswith('/api/kie/'):
+            self._proxy_to_studio()
+            return
+        super().do_POST()
+
+    def _proxy_to_studio(self):
+        length = int(self.headers.get('Content-Length', '0') or '0')
+        if length > 30 * 1024 * 1024:
+            self.send_error(413)
+            return
+        payload = self.rfile.read(length) if length else None
+        # Preserve public Host + Origin so the Studio enforces same-origin writes.
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in base.HOP_BY_HOP_HEADERS}
+        headers['Connection'] = 'close'
+        connection = http.client.HTTPConnection('127.0.0.1', STUDIO_PORT, timeout=180)
+        try:
+            connection.request(self.command, self.path, body=payload, headers=headers)
+            response = connection.getresponse()
+            self.send_response(response.status)
+            for name, value in response.getheaders():
+                if name.lower() not in base.HOP_BY_HOP_HEADERS:
+                    self.send_header(name, value)
+            self.send_header('Connection', 'close')
+            self.end_headers()
+            self.close_connection = True
+            while chunk := response.read(256 * 1024):
+                self.wfile.write(chunk)
+        except (OSError, http.client.HTTPException):
+            if not self.close_connection:
+                self.send_error(503, 'Studio service is not ready')
+        finally:
+            connection.close()
 
     def _send_comfy_logs(self):
         text = ''

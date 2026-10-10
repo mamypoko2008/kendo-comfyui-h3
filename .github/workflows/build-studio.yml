@@ -1,0 +1,43 @@
+name: Build Kendo-Seedance 2.5+Qwen
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v3.1.*-studio.*'
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+        working-directory: mcp
+      - run: node --test tests/studio.test.mjs tests/mcp-v3-beta.test.mjs tests/workflow-v3-beta.test.cjs
+      - run: python -m unittest discover -s tests -p test_studio.py -v
+      - run: python -m unittest discover -s tests -p test_v3_beta.py -v
+      - name: Free space for the ComfyUI image
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build the shared V3 base and Studio runtime
+        run: |
+          docker build -f Dockerfile.v3-beta -t kendo-comfyui-h3:studio-base .
+          docker build -f Dockerfile.studio --label org.opencontainers.image.title="Kendo-Seedance 2.5+Qwen" --label org.opencontainers.image.revision="${GITHUB_SHA}" -t kendo-comfyui-h3:studio .
+      - name: Publish Studio image
+        env:
+          IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3
+          IMAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v3.1.0-studio.1' }}
+        run: |
+          docker tag kendo-comfyui-h3:studio "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"
+          docker push "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"

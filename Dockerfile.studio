@@ -1,0 +1,24 @@
+# Build Dockerfile.v3-beta as kendo-comfyui-h3:studio-base first.
+ARG STUDIO_BASE=kendo-comfyui-h3:studio-base
+FROM ${STUDIO_BASE}
+# This revision includes native TextEncodeQwenImage21 + Qwen Image 2.1 support.
+ARG COMFYUI_STUDIO_COMMIT=0df64eb242b7c5759c3e86afd5d1846d923b1033
+RUN git -C /opt/comfyui-baked fetch --depth=1 origin ${COMFYUI_STUDIO_COMMIT} \
+    && git -C /opt/comfyui-baked checkout --detach ${COMFYUI_STUDIO_COMMIT} \
+    && python3.12 -m pip install --no-cache-dir -r /opt/comfyui-baked/requirements.txt
+COPY workflows/image_qwen_image_2_1_t2i.json /opt/comfyui-baked/user/default/workflows/KENDO_Qwen_Image_21.json
+ARG DETAIL_DAEMON_COMMIT=3394e44afea04ed0188fb37b21f0d9952469766b
+ARG KJNODES_COMMIT=d3cfe21625e5170126ce06fbfcfe1d88108688c3
+RUN if [ ! -d /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon/.git ]; then \
+       git clone https://github.com/Jonseed/ComfyUI-Detail-Daemon /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon; fi \
+    && git -C /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon fetch --depth=1 origin ${DETAIL_DAEMON_COMMIT} \
+    && git -C /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon checkout --detach ${DETAIL_DAEMON_COMMIT} \
+    && if [ ! -d /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes/.git ]; then \
+       git clone https://github.com/kijai/ComfyUI-KJNodes /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes; fi \
+    && git -C /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes fetch --depth=1 origin ${KJNODES_COMMIT} \
+    && git -C /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes checkout --detach ${KJNODES_COMMIT} \
+    && python3.12 -m pip install --no-cache-dir \
+       -r /opt/comfyui-baked/custom_nodes/ComfyUI-Detail-Daemon/requirements.txt \
+       -r /opt/comfyui-baked/custom_nodes/ComfyUI-KJNodes/requirements.txt
+COPY web/seedance25.html /opt/kendo-page/index.html
+ENV KENDO_IMAGE_MODELS=qwen21-turbo KENDO_IMAGE_VERSION=3.1.0-studio.1 KENDO_AUTO_DOWNLOAD_MODELS=0 KENDO_MCP_NAME="Kendo-Seedance 2.5+Qwen"

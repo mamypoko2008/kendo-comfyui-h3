@@ -1,0 +1,22 @@
+{
+  "name": "Kendo-Seedance 2.5+Qwen",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.1",
+  "category": "NVIDIA",
+  "containerDiskInGb": 100,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 100,
+  "volumeMountPath": "/workspace",
+  "ports": ["3000/http", "3001/http", "8188/http", "8888/http", "22/tcp"],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "0",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MCP_HOST": "0.0.0.0",
+    "KENDO_IMAGE_MODELS": "qwen21-turbo",
+    "KIE_API_KEY": ""
+  },
+  "readme": "# Kendo-Seedance 2.5+Qwen\n\nV3.1 Studio with separate video and image tabs.\n\n- **Page:** port 3000; video at /seedance25.html and images at /images.html.\n- **MCP:** port 3001; one access-code URL controls KIE video and local Qwen. The code is generated at first boot and retained on the volume.\n- **ComfyUI:** port 8188. **JupyterLab:** port 8888.\n\n## Video\nSet KIE_API_KEY in your Pod environment before launch. Seedance 2.5 and regular Seedance 2.0 are selectable. Start with 3 image slots and add one at a time. Seedance 2.5 supports up to 30 references; Seedance 2.0 supports up to 9. Review the estimated price and confirm before submitting a paid job.\n\n## Images\nQwen Image 2.1 Turbo runs locally on the RunPod GPU. The pinned diffusion, encoder and VAE files download automatically at first launch (17.28 GB total) and are reused on the persistent volume. Native Qwen supports text-to-image, reference editing and PNG transparency. To install the regular INT8 model too, set KENDO_IMAGE_MODELS=qwen21-turbo,qwen21.\n\nThe additional Qwen 2.1 + Flux Klein 9B profile adapts the attached workflow: text-to-image, Detail Daemon, approximately 4 MP RGB output, before/after PNGs, optional portrait LoRA. The custom nodes are included. Its six model files and optional LoRA must be installed separately; the page lists missing filenames and blocks generation until ready. See https://github.com/mamypoko2008/kendo-comfyui-h3/blob/main/STUDIO.md for exact filenames and official sources. Flux Klein weights require access through your own Hugging Face account.\n\nUse a fresh ComfyUI workspace for this template. Container disk and persistent volume default to 100 GB each; a Network Volume has its own size. GPU inference has not yet been validated."
+}

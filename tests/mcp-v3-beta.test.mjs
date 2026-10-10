@@ -17,6 +17,8 @@ const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/cli
 
 const CODE = 'kendo-testcode';
 const state = { ready: true, submitted: [], queue: { queue_running: [], queue_pending: [] }, history: {} };
+const imageNative = require('../web/workflow-images.js');
+let imageInfo = {}, imageSubmitted = [];
 let mockComfy, mockPage, mcpHttp, inputDir, mcpUrl, client;
 
 function listen(server) { return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port))); }
@@ -27,10 +29,11 @@ before(async () => {
   inputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'kendo-mcp-input-'));
   mockComfy = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/object_info') return json(res, imageInfo);
     if (url.pathname === '/queue' && req.method === 'GET') return json(res, state.queue);
     if (url.pathname === '/queue' && req.method === 'POST') { const body = JSON.parse(await readBody(req)); state.queue.queue_pending = state.queue.queue_pending.filter(item => !body.delete.includes(item[1])); return json(res, {}); }
     if (url.pathname === '/interrupt') { state.queue.queue_running = []; return json(res, {}); }
-    if (url.pathname === '/prompt') { const body = JSON.parse(await readBody(req)); if (!body.prompt?.reference) return json(res, { error: { message: 'bad workflow' } }, 400); const id = 'job-' + (state.submitted.length + 1); state.submitted.push(body); return json(res, { prompt_id: id, number: state.submitted.length }); }
+    if (url.pathname === '/prompt') { const body = JSON.parse(await readBody(req)); if (body.prompt?.['4']?.class_type === 'TextEncodeQwenImage21' || body.prompt?.['63']?.class_type === 'UNETLoader') { imageSubmitted.push(body); return json(res, { prompt_id: 'qwen-job-1' }); } if (!body.prompt?.reference) return json(res, { error: { message: 'bad workflow' } }, 400); const id = 'job-' + (state.submitted.length + 1); state.submitted.push(body); return json(res, { prompt_id: id, number: state.submitted.length }); }
     if (url.pathname.startsWith('/history/')) { const id = decodeURIComponent(url.pathname.slice('/history/'.length)); return json(res, state.history[id] ? { [id]: state.history[id] } : {}); }
     if (url.pathname === '/history') return json(res, state.history);
     if (url.pathname === '/sample.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); return res.end(Buffer.from('89504e470d0a1a0a', 'hex')); }
@@ -73,7 +76,7 @@ test('wrong or missing access code is a 404, never a 401 that triggers OAuth', a
 
 test('exposes the Kendo tool set and instructions', async () => {
   const tools = (await client.listTools()).tools.map(t => t.name).sort();
-  assert.deepEqual(tools, ['kendo_cancel', 'kendo_generate', 'kendo_history', 'kendo_job_status', 'kendo_list_references', 'kendo_status', 'kendo_upload_from_url']);
+  assert.deepEqual(tools, ['kendo_cancel', 'kendo_generate', 'kendo_history', 'kendo_image_generate', 'kendo_image_job_status', 'kendo_image_status', 'kendo_job_status', 'kendo_list_references', 'kendo_status', 'kendo_upload_from_url', 'kie_history', 'kie_job_status', 'kie_seedance_generate', 'kie_seedream_generate', 'kie_status']);
   assert.match(client.getInstructions(), /<Picture 1>/);
 });
 
@@ -163,4 +166,44 @@ test('cancel removes a queued job and interrupts a running one', async () => {
   state.queue = { queue_running: [[0, 'job-8']], queue_pending: [] };
   assert.equal((await call('kendo_cancel', { job_id: 'job-8' })).data.was, 'running');
   assert.equal((await call('kendo_cancel', { job_id: 'job-7' })).data.cancelled, false);
+});
+
+
+test('Qwen MCP shares the native image graph, validates files and returns result URLs', async () => {
+  assert.equal((await call('kendo_image_status')).data.models['qwen21-turbo'].ready, false);
+  const refused=await call('kendo_image_generate',{prompt:'A coffee cup'});
+  assert.equal(refused.isError,true);assert.equal(imageSubmitted.length,0);
+  imageInfo=Object.fromEntries(imageNative.REQUIRED.map(n=>[n,{}]));
+  imageInfo.UNETLoader={input:{required:{unet_name:[[imageNative.MODELS['qwen21-turbo'].diffusion]]}}};
+  imageInfo.CLIPLoader={input:{required:{clip_name:[[imageNative.ENCODER]]}}};
+  imageInfo.VAELoader={input:{required:{vae_name:[[imageNative.VAE]]}}};
+  const ready=await call('kendo_image_status');
+  assert.equal(ready.data.models['qwen21-turbo'].ready,true);
+  assert.equal(ready.data.models.qwen21.ready,false);
+  assert.equal(ready.data.page_url,'https://pod123-3000.proxy.runpod.net/images.html');
+  assert.equal((await call('kendo_image_generate',{prompt:'A coffee cup',references:['../secret.png']})).isError,true);
+  assert.equal((await call('kendo_image_generate',{prompt:'A coffee cup',references:['missing.png']})).isError,true);
+  await fs.writeFile(path.join(inputDir,'qwen-ref.png'),Buffer.from('mock-image'));
+  const task=await call('kendo_image_generate',{prompt:'Change the lighting',references:['qwen-ref.png'],transparent:true});
+  assert.equal(task.isError,undefined);assert.equal(task.data.prompt_id,'qwen-job-1');
+  assert.equal(imageSubmitted.length,1);
+  assert.deepEqual(imageSubmitted[0].prompt['6'].inputs.latent_image,['4',2]);
+  assert.match(imageSubmitted[0].prompt['4'].inputs.prompt,/RGBA/);
+  state.history['qwen-job-1']={status:{completed:true,status_str:'success'},outputs:{8:{images:[{filename:'Kendo_Qwen21_00001.png',subfolder:'',type:'output'}]}}};
+  const result=await call('kendo_image_job_status',{prompt_id:'qwen-job-1'});
+  assert.equal(result.data.status,'done');
+  assert.match(result.data.image_urls[0],/^https:\/\/pod123-3000.proxy.runpod.net\/api\/comfy\/view\?/);
+  for(const n of imageNative.KLEIN_REQUIRED) imageInfo[n]??={};
+  imageInfo.UNETLoader.input.required.unet_name[0].push(imageNative.MODELS['qwen21-klein'].diffusion,imageNative.KLEIN.diffusion);
+  imageInfo.CLIPLoader.input.required.clip_name[0].push(imageNative.MODELS['qwen21-klein'].encoder,imageNative.KLEIN.encoder);
+  imageInfo.VAELoader.input.required.vae_name[0].push(imageNative.KLEIN.vae);
+  assert.equal((await call('kendo_image_status')).data.models['qwen21-klein'].ready,true);
+  const invalid=await call('kendo_image_generate',{model:'qwen21-klein',prompt:'A cup',references:['qwen-ref.png']});
+  assert.equal(invalid.isError,true);assert.equal(imageSubmitted.length,1);
+  const missingLora=await call('kendo_image_generate',{model:'qwen21-klein',prompt:'A cup',use_attached_lora:true});
+  assert.equal(missingLora.isError,true);assert.equal(imageSubmitted.length,1);
+  const klein=await call('kendo_image_generate',{model:'qwen21-klein',prompt:'A cup',seed:123});
+  assert.equal(klein.isError,undefined);assert.equal(imageSubmitted.length,2);
+  assert.equal(imageSubmitted[1].prompt['53'].inputs.steps,2);
+  assert.equal(imageSubmitted[1].prompt['162'].inputs.filename_prefix,'Kendo_Qwen21_Klein_after');
 });

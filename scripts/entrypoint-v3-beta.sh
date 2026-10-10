@@ -32,5 +32,19 @@ nohup /opt/node/bin/node /opt/kendo-mcp/server.mjs \
   > /workspace/kendo-mcp.log 2>&1 &
 echo "[KENDO v3 beta] Claude MCP server listening on ${KENDO_MCP_HOST}:${KENDO_MCP_PORT:-3001}; log: /workspace/kendo-mcp.log"
 
+nohup /opt/node/bin/node /opt/kendo-mcp/studio-server.mjs \
+  > /workspace/kendo-studio.log 2>&1 &
+echo '[KENDO Studio] Seedance: /seedance25.html; local Qwen images: /images.html'
+if [[ -n "${KENDO_IMAGE_MODELS:-}" ]]; then
+  # The downloader must not create a partial ComfyUI tree before the inherited
+  # entrypoint checks whether the baked core needs to be copied to a fresh volume.
+  if [[ ! -d /workspace/runpod-slim/ComfyUI ]]; then
+    mkdir -p /workspace/runpod-slim
+    cp -a /opt/comfyui-baked /workspace/runpod-slim/ComfyUI
+  fi
+  nohup python3.12 /opt/kendo/download_image_models.py \
+    > /workspace/kendo-image-download.log 2>&1 &
+fi
+
 touch "${KENDO_COMFY_LOG_FILE:-/workspace/comfyui.log}"
 exec /opt/kendo/entrypoint.sh > >(tee -a "${KENDO_COMFY_LOG_FILE:-/workspace/comfyui.log}") 2>&1

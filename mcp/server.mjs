@@ -13,9 +13,11 @@ import { pathToFileURL } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { registerKieTools } from './kie-tools.mjs';
+import { registerImageTools } from './image-tools.mjs';
 
 const require = createRequire(import.meta.url);
-const VERSION = '3.0.0-beta.15';
+const VERSION = process.env.KENDO_IMAGE_VERSION || '3.0.0-beta.15';
 const env = (name, fallback) => (process.env[name] ?? '').trim() || fallback;
 const CONFIG = {
   host: env('KENDO_MCP_HOST', '0.0.0.0'),
@@ -173,10 +175,14 @@ const guard = handler => async (args, extra) => {
 };
 
 const INSTRUCTIONS = `Kendo Studio MiniMax H3 video generator running inside a RunPod Pod.
-Typical flow: (1) kendo_status until models_ready and comfy_ready are true. (2) Put reference files into the Pod with kendo_upload_from_url (any public image/video/audio URL, e.g. results from an image generator) or read the files the user uploaded on the Page with kendo_list_references. (3) kendo_generate with the prompt; refer to references inside the prompt as <Picture 1>, <Picture 2> (order of the images array), <Video 1>, and <Audio 1..3> (video soundtrack first when video_audio is true, then standalone audios). (4) Poll kendo_job_status every 15-30 seconds until status is done, then give the user the video_url. Generation usually takes a few minutes; never block on it.`;
+Typical flow: (1) kendo_status until models_ready and comfy_ready are true. (2) Put reference files into the Pod with kendo_upload_from_url (any public image/video/audio URL, e.g. results from an image generator) or read the files the user uploaded on the Page with kendo_list_references. (3) kendo_generate with the prompt; refer to references inside the prompt as <Picture 1>, <Picture 2> (order of the images array), <Video 1>, and <Audio 1..3> (video soundtrack first when video_audio is true, then standalone audios). (4) Poll kendo_job_status every 15-30 seconds until status is done, then give the user the video_url. Generation usually takes a few minutes; never block on it.
+KIE video flow: kie_status, then kie_seedance_generate (seedance-2 is regular 2.0; seedance-2-5 is 2.5). Only set confirm_cost=true for a user-authorized paid request; poll kie_job_status. Do not automatically recreate a task after connection failures.
+Local Qwen image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Qwen uses no KIE credits. All tools share this MCP URL.`;
 
 function createServer() {
-  const server = new McpServer({ name: 'kendo-h3', version: VERSION }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: process.env.KENDO_MCP_NAME || 'kendo-h3', version: VERSION }, { instructions: INSTRUCTIONS });
+  registerKieTools(server);
+  registerImageTools(server);
 
   server.registerTool('kendo_status', {
     title: 'Kendo status',

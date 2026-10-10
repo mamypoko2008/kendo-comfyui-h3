@@ -2,11 +2,15 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 export const IMAGE_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9'];
 export const VIDEO_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'];
 export const MODELS = { image: 'seedream/5-pro-text-to-image', imageReference: 'seedream/5-pro-image-to-image', video: 'bytedance/seedance-2-5' };
-const VIDEO_RATES = { '480p': .14, '720p': .315, '1080p': .79 };
+export const VIDEO_MODELS = {
+  'seedance-2-5': { model: 'bytedance/seedance-2-5', maxImages: 30, maxDuration: 30, maxPrompt: 30000, rates: { '480p': .14, '720p': .315, '1080p': .79 } },
+  'seedance-2': { model: 'bytedance/seedance-2', maxImages: 9, maxDuration: 15, maxPrompt: 20000, rates: { '480p': .095, '720p': .205, '1080p': .51, '4k': 1.04 } }
+};
 export class KieError extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
@@ -23,10 +27,13 @@ export function publicUrl(value) {
 }
 export function buildKiePayload(args = {}) {
   const kind = choose(args.kind, ['image', 'video'], 'kind');
+  const video = VIDEO_MODELS[choose(args.model ?? 'seedance-2-5', Object.keys(VIDEO_MODELS), 'video model')];
+  const maxPrompt = kind === 'image' ? 5000 : video.maxPrompt;
+  const maxImages = kind === 'image' ? 10 : video.maxImages;
   const prompt = typeof args.prompt === 'string' ? args.prompt.trim() : '';
-  if (!prompt || prompt.length > (kind === 'image' ? 5000 : 30000)) throw new KieError(`Prompt must contain 1-${kind === 'image' ? 5000 : 30000} characters`);
+  if (!prompt || prompt.length > maxPrompt) throw new KieError(`Prompt must contain 1-${maxPrompt} characters`);
   const references = args.reference_urls ?? [];
-  if (!Array.isArray(references) || references.length > (kind === 'image' ? 10 : 30)) throw new KieError(`Maximum ${kind === 'image' ? 10 : 30} image references`);
+  if (!Array.isArray(references) || references.length > maxImages) throw new KieError(`Maximum ${maxImages} image references`);
   const urls = references.map(publicUrl);
   const input = { prompt, aspect_ratio: choose(args.ratio ?? '16:9', kind === 'image' ? IMAGE_RATIOS : VIDEO_RATIOS, 'aspect ratio') };
   let estimate;
@@ -37,21 +44,21 @@ export function buildKiePayload(args = {}) {
     if (urls.length) input.image_urls = urls;
     estimate = (input.quality === 'high' ? .07 : .035) + Math.max(0, urls.length - 1) * .0025;
   } else {
-    input.resolution = choose(args.resolution ?? '720p', Object.keys(VIDEO_RATES), 'resolution');
+    input.resolution = choose(args.resolution ?? '720p', Object.keys(video.rates), 'resolution');
     input.duration = args.duration ?? 10;
-    if (!Number.isInteger(input.duration) || input.duration < 4 || input.duration > 30) throw new KieError('Duration must be an integer from 4 to 30 seconds');
+    if (!Number.isInteger(input.duration) || input.duration < 4 || input.duration > video.maxDuration) throw new KieError(`Duration must be an integer from 4 to ${video.maxDuration} seconds`);
     if (args.generate_audio !== undefined && typeof args.generate_audio !== 'boolean') throw new KieError('generate_audio must be boolean');
     input.generate_audio = args.generate_audio ?? true;
-    input.output_format = 'mp4';
+    if (args.model !== 'seedance-2') input.output_format = 'mp4';
     if (urls.length) input.reference_image_urls = urls;
-    estimate = VIDEO_RATES[input.resolution] * input.duration;
+    estimate = video.rates[input.resolution] * input.duration;
   }
-  return { payload: { model: kind === 'image' ? (urls.length ? MODELS.imageReference : MODELS.image) : MODELS.video, input }, estimate_usd: Number(estimate.toFixed(4)), kind };
+  return { payload: { model: kind === 'image' ? (urls.length ? MODELS.imageReference : MODELS.image) : video.model, input }, estimate_usd: Number(estimate.toFixed(4)), kind };
 }
 
 export function createKieService(options = {}) {
   const fetcher = options.fetchImpl ?? fetch;
-  const dataDir = options.dataDir ?? process.env.KENDO_KIE_DATA_DIR ?? path.resolve('..', '.kendo-kie');
+  const dataDir = options.dataDir ?? process.env.KENDO_KIE_DATA_DIR ?? fileURLToPath(new URL('../.kendo-kie/', import.meta.url));
   const apiBase = options.apiBase ?? 'https://api.kie.ai';
   const uploadUrl = options.uploadUrl ?? 'https://kieai.redpandaai.co/api/file-stream-upload';
   const key = () => (options.apiKey ?? process.env.KIE_API_KEY ?? '').trim();
@@ -121,8 +128,10 @@ export function createKieService(options = {}) {
       await fs.writeFile(receipt, JSON.stringify({ hash, task_id: id, state: 'submitted' }));
       return saveJob({ task_id: id, request_id: requestId, kind: built.kind, model: built.payload.model, state: 'waiting', estimate_usd: built.estimate_usd, created_at: new Date().toISOString(), result_urls: [], remote_urls: [] });
     };
-    if (!pendingSubmissions.has(requestId)) pendingSubmissions.set(requestId, run().finally(() => pendingSubmissions.delete(requestId)));
-    return pendingSubmissions.get(requestId);
+    const pending = pendingSubmissions.get(requestId);
+    if (pending && pending.hash !== hash) throw new KieError('request_id was already used with different settings', 409);
+    if (!pending) pendingSubmissions.set(requestId, { hash, promise: run().finally(() => pendingSubmissions.delete(requestId)) });
+    return pendingSubmissions.get(requestId).promise;
   }
   async function uploadImage(buffer, mime, name = 'reference') {
     if (!Buffer.isBuffer(buffer) || !buffer.length || buffer.length > 30 * 1024 * 1024) throw new KieError('Image must be between 1 byte and 30 MB');
