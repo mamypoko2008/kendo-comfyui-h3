@@ -1,5 +1,7 @@
 # Kendo-Seedance 2.5+Qwen (V3.1)
 
+Published on 2026-10-10: [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8), image `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.1`. [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38056814904) succeeded; the image's public pull, amd64 platform, version, entrypoint and title were verified. Image digest: `sha256:72778aa0a721a0eee826cc02b6ed9b4e032b70a143bc39be78e481db915d288f`. The template is public, with 100 GB container disk and 100 GB persistent volume. GPU inference remains unvalidated; no Pod was launched during publication.
+
 Pages share the V3 light/dark design:
 
 - `/seedance25.html`: Seedance 2.5 or **regular** Seedance 2.0 via KIE. Review and confirm the price before submitting. The selector changes price, duration and reference limits. Images/text only; video-input billing is not included in these estimates.
@@ -50,7 +52,7 @@ For the regular image model as well, set `KENDO_IMAGE_MODELS=qwen21-turbo,qwen21
 python3.12 /opt/kendo/download_image_models.py --models qwen21-turbo,qwen21
 ```
 
-No model download has been performed on the development computer. GPU inference and Docker image building need to be verified on the target Pod.
+No model download has been performed on the development computer. Docker building and publication succeeded in GitHub Actions. GPU inference still needs to be verified on the target Pod.
 
 ## KIE setup
 
