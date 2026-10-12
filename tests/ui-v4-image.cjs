@@ -14,14 +14,15 @@ const qwen=require('../web/workflow-qwen-v4.js');
   const info=Object.fromEntries(qwen.REQUIRED.map(name=>[name,{input:{required:{}}}]));
   info.UNETLoader.input.required.unet_name=[[qwen.MODELS.qwen21.diffusion]];info.CLIPLoader.input.required.clip_name=[[qwen.ENCODER]];info.VAELoader.input.required.vae_name=[[qwen.VAE]];
   let filesReady=false,missingNode=false,submitted=[],history={},uploadCount=0,kieCalls=0,fixture;
+  let queue={queue_running:[],queue_pending:[]},queueFailure=false,historyFailure=false;
   try{
     await p.route('**/api/kie/**',route=>{kieCalls++;return route.fulfill({status:503,json:{error:'not used'}});});
     await p.route('**/api/kendo/image-status',route=>route.fulfill({json:{files_ready:filesReady,progress:filesReady?100:42}}));
     await p.route('**/api/kendo/status',route=>route.fulfill({json:{models_ready:true,comfy_ready:true,progress:100,mcp_ready:true,mcp_url:'https://testpod-3001.proxy.runpod.net/mcp/test-code',comfy_url:'https://testpod-8188.proxy.runpod.net/'}}));
     await p.route('**/api/kendo/logs',route=>route.fulfill({json:{text:'Ready'}}));
     await p.route('**/api/comfy/object_info',route=>route.fulfill({json:missingNode?{...info,TextEncodeQwenImage21:undefined}:info}));
-    await p.route('**/api/comfy/queue',route=>route.fulfill({json:{queue_running:[],queue_pending:[]}}));
-    await p.route('**/api/comfy/history**',route=>route.fulfill({json:history}));
+    await p.route('**/api/comfy/queue',route=>route.fulfill(queueFailure?{status:503,json:{error:'Queue unavailable'}}:{json:queue}));
+    await p.route('**/api/comfy/history**',route=>route.fulfill(historyFailure?{status:503,json:{error:'History unavailable'}}:{json:history}));
     await p.route('**/api/comfy/upload/image',route=>{uploadCount++;return route.fulfill({json:{name:`reference-${uploadCount}.png`,subfolder:''}});});
     await p.route('**/api/comfy/view?*',route=>route.fulfill({body:fixture,contentType:'image/png'}));
     await p.route('**/api/comfy/prompt',route=>{const body=route.request().postDataJSON();submitted.push(body);return route.fulfill({json:{prompt_id:body.prompt.reference?'video-job':'image-job'}});});
@@ -30,6 +31,22 @@ const qwen=require('../web/workflow-qwen-v4.js');
     assert.equal(await p.locator('.reference-slot').count(),3);await p.locator('#add-reference').click();assert.equal(await p.locator('.reference-slot').count(),4);
     filesReady=true;missingNode=true;await p.reload();await p.waitForFunction(()=>document.querySelector('#notice').textContent.includes('ขาด node'));assert.equal(await p.locator('#generate').isDisabled(),true);
     missingNode=false;await p.reload();await p.waitForFunction(()=>!document.querySelector('#generate').disabled);
+    await p.waitForFunction(()=>document.querySelector('#queue-state').textContent==='คิวว่าง');
+    assert.equal(await p.locator('#queue-active-count').textContent(),'0');assert.equal(await p.locator('#queue-pending-count').textContent(),'0');
+    // Queue updates independently of image history, including jobs submitted by video or MCP.
+    historyFailure=true;queue={queue_running:[[1,'mcp-job',{},{}]],queue_pending:[[2,'video-job',{},{}],[3,'image-job',{},{}]]};
+    await p.waitForFunction(()=>document.querySelector('#queue-active-count').textContent==='1'&&document.querySelector('#queue-pending-count').textContent==='2');
+    assert.equal(await p.locator('#queue-state').textContent(),'ทั้งหมด 3 งาน');
+    assert.equal(await p.locator('#queue-summary .has-jobs').count(),2);
+    queueFailure=true;await p.waitForFunction(()=>document.querySelector('#queue-state').textContent==='อ่านคิวไม่ได้');
+    assert.equal(await p.locator('#queue-active-count').textContent(),'–');assert.equal(await p.locator('#queue-pending-count').textContent(),'–');
+    assert.equal(await p.locator('#queue-summary .has-jobs').count(),0);
+    queueFailure=false;queue={queue_running:[],queue_pending:[[3,'image-job',{},{}]]};
+    await p.waitForFunction(()=>document.querySelector('#queue-active-count').textContent==='0'&&document.querySelector('#queue-pending-count').textContent==='1');
+    assert.equal(await p.locator('#queue-summary .queue-item.active.has-jobs').count(),0);
+    assert.equal(await p.locator('#queue-summary .queue-item.pending.has-jobs').count(),1);
+    historyFailure=false;queue={queue_running:[],queue_pending:[]};
+    await p.waitForFunction(()=>document.querySelector('#queue-state').textContent==='คิวว่าง');
     assert.equal(await p.locator('#mcp-url').inputValue(),'https://testpod-3001.proxy.runpod.net/mcp/test-code');
     fixture=await p.locator('.logo').first().screenshot();
     await p.locator('#prompt').fill('Change <image1> into a premium product photograph');
@@ -48,7 +65,8 @@ const qwen=require('../web/workflow-qwen-v4.js');
     await p.locator('#prompt').fill('Slowly rotate the product');await p.waitForFunction(()=>!document.querySelector('#generate').disabled);await p.locator('#generate').click();
     await p.waitForFunction(()=>document.querySelector('#notice').textContent.includes('ส่งเข้าคิวแล้ว'));
     assert.equal(submitted.length,2);assert.equal(submitted[1].prompt.save.inputs.filename_prefix,'video/Kendo_H3_v4image');
-    await p.goto(url+'/images-v4.html');await p.waitForFunction(()=>!document.querySelector('#generate').disabled);
+    queue={queue_running:[[1,'image-job',{},{}]],queue_pending:[[2,'video-job',{},{}]]};
+    await p.goto(url+'/images-v4.html');await p.waitForFunction(()=>!document.querySelector('#generate').disabled&&document.querySelector('#queue-active-count').textContent==='1');
     await p.screenshot({path:path.join(output,'v4-qwen-light.png'),fullPage:true});await p.locator('#theme').click();await p.screenshot({path:path.join(output,'v4-qwen-dark.png'),fullPage:true});
     for(const width of [390,320]){
       await p.setViewportSize({width,height:1000});
@@ -60,6 +78,6 @@ const qwen=require('../web/workflow-qwen-v4.js');
       }
     }
     assert.equal(kieCalls,0);assert.deepEqual(errors,[]);
-    console.log('V4 local Qwen UI passed: readiness, standard 2K edits, direct generation, image/video handoff, one queue/MCP, isolated history and mobile layouts.');
+    console.log('V4 local Qwen UI passed: live shared queue counts, queue failure/recovery independent of history, readiness, standard 2K edits, direct generation, image/video handoff and mobile layouts.');
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

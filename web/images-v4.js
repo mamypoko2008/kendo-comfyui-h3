@@ -3,11 +3,11 @@
   'use strict';
   const $=selector=>document.querySelector(selector),native=window.KendoQwenV4;
   const slots=Array(10).fill(null),tracked=new Set();
-  let visible=3,ready=null,busy=false,reading=false,selectedResult=null;
+  let visible=3,ready=null,busy=false,reading=false,selectedResult=null,queueReading=false;
   const notice=text=>$('#notice').textContent=text;
   const updateButton=()=>$('#generate').disabled=busy||reading||!ready?.ready;
   async function api(route,options={}) {
-    const response=await fetch('/api/comfy'+route,{...options,signal:AbortSignal.timeout(60000)});
+    const response=await fetch('/api/comfy'+route,{...options,signal:options.signal??AbortSignal.timeout(60000)});
     let data;try{data=await response.json();}catch{throw new Error('บริการ ComfyUI ยังไม่พร้อม');}
     if(!response.ok)throw new Error(typeof data.error==='string'?data.error:data.error?.message||'ComfyUI ไม่รับงาน กรุณาตรวจ Console');
     return data;
@@ -69,6 +69,22 @@
     try{const response=await fetch('/api/kendo/status',{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!response.ok)return;const state=await response.json();$('#mcp-url').value=state.mcp_url||'';$('#mcp-copy').disabled=!state.mcp_url;$('#connection-state').textContent=state.mcp_ready?'Comfy MCP พร้อมใช้งาน':'กำลังเริ่ม Comfy MCP';document.querySelectorAll('.comfy-link').forEach(a=>a.href=state.comfy_url||'#');}catch{}
   }
   $('#mcp-copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#mcp-url').value);$('#connection-state').textContent='คัดลอกลิงก์ MCP แล้ว';}catch{$('#mcp-url').select();}};
+  async function refreshQueue() {
+    if(queueReading)return;
+    queueReading=true;
+    try {
+      const queue=await api('/queue',{cache:'no-store',signal:AbortSignal.timeout(10000)});
+      if(!Array.isArray(queue.queue_running)||!Array.isArray(queue.queue_pending))throw new Error('Invalid queue');
+      const active=queue.queue_running.length,pending=queue.queue_pending.length;
+      $('#queue-active-count').textContent=String(active);$('#queue-pending-count').textContent=String(pending);
+      $('#queue-summary .queue-item.active').classList.toggle('has-jobs',active>0);
+      $('#queue-summary .queue-item.pending').classList.toggle('has-jobs',pending>0);
+      $('#queue-state').textContent=active||pending?`ทั้งหมด ${active+pending} งาน`:'คิวว่าง';
+    }catch {
+      $('#queue-active-count').textContent='–';$('#queue-pending-count').textContent='–';$('#queue-state').textContent='อ่านคิวไม่ได้';
+      $('#queue-summary .queue-item.active').classList.remove('has-jobs');$('#queue-summary .queue-item.pending').classList.remove('has-jobs');
+    }finally{queueReading=false;}
+  }
   function resultUrl(file){return '/api/comfy/view?'+new URLSearchParams({filename:file.filename,subfolder:file.subfolder||'',type:file.type||'output'});}
   function sendToVideo(file){sessionStorage.setItem('kendo-v4-image-reference',JSON.stringify({filename:file.filename,subfolder:file.subfolder||''}));location.href='/v4-image.html';}
   function showResult(file){selectedResult=file;const img=document.createElement('img');img.src=resultUrl(file);img.alt='ภาพที่สร้างด้วย Qwen Image 2.1';$('#preview').replaceChildren(img);$('#download').href=img.src;$('#result-actions').hidden=false;}
@@ -85,7 +101,6 @@
       for(const id of tracked){const entry=history[id];if(entry?.status?.status_str==='error'){tracked.delete(id);notice('สร้างภาพไม่สำเร็จ กรุณาตรวจ ComfyUI Console');}}
       $('#history').replaceChildren(...cards);$('#activity').textContent=tracked.size?`กำลังติดตาม ${tracked.size} งาน`:cards.length?`${cards.length} ภาพ`:'';
     }catch{}
-    try{const queue=await api('/queue');$('#queue-state').textContent=`กำลังรัน ${queue.queue_running?.length||0} · รอคิว ${queue.queue_pending?.length||0}`;}catch{}
   }
   $('#generate').onclick=async()=>{
     if(busy||reading||!ready?.ready)return;
@@ -102,10 +117,10 @@
       const graph=native.buildWorkflow({...options,...current.files,references});attempted=true;
       const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:graph,client_id:crypto.randomUUID()})});
       if(!result.prompt_id)throw new Error('ComfyUI ไม่ส่งหมายเลขงานกลับมา');
-      tracked.add(result.prompt_id);$('#seed').value=String(seed);notice('ส่งเข้าคิวแล้ว · Seed '+seed);void refreshHistory();
+      tracked.add(result.prompt_id);$('#seed').value=String(seed);notice('ส่งเข้าคิวแล้ว · Seed '+seed);void refreshQueue();void refreshHistory();
     }catch(error){notice(error.message+(attempted?' · ตรวจคิวก่อนส่งใหม่':''));}finally{busy=false;updateButton();}
   };
   window.addEventListener('beforeunload',()=>slots.filter(Boolean).forEach(item=>URL.revokeObjectURL(item.url)));
-  renderReferences();void checkReadiness();void connection();void refreshHistory();
-  setInterval(checkReadiness,5000);setInterval(connection,15000);setInterval(refreshHistory,4000);
+  renderReferences();void checkReadiness();void connection();void refreshQueue();void refreshHistory();
+  setInterval(checkReadiness,5000);setInterval(connection,15000);setInterval(refreshQueue,4000);setInterval(refreshHistory,4000);
 })();
