@@ -1,0 +1,44 @@
+{
+  "id": "zb4grla5cq",
+  "name": "Kendo-ComfyUI-H3 V4 + Qwen Image 2.1",
+  "templateUrl": "https://console.runpod.io/hub/template/zb4grla5cq",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.2.0-image.1",
+  "imageDigest": "sha256:96d3ad4cdf8fc72291d14da5dbcd6b60b5a4cfa4eb7279140cd40e94c37f031f",
+  "sourceCommit": "c3f43f7f61071305ca973cc5dfa3382a34876b6d",
+  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38266491460",
+  "deployedAt": "2026-10-12T15:02:50.0830511+00:00",
+  "portsConfig": [
+    {
+      "port": "22",
+      "name": "SSH"
+    },
+    {
+      "port": "3000",
+      "name": "Page HTML"
+    },
+    {
+      "port": "3001",
+      "name": "Comfy MCP"
+    },
+    {
+      "port": "8188",
+      "name": "ComfyUI"
+    },
+    {
+      "port": "8888",
+      "name": "JupyterLab"
+    }
+  ],
+  "containerDiskInGb": 100,
+  "volumeInGb": 100,
+  "volumeMountPath": "/workspace",
+  "localImageModel": "qwen21",
+  "localQwenEnabled": true,
+  "publicImagePullVerified": true,
+  "existingTemplatesVerifiedUnchanged": 20,
+  "nodeTestsPassed": 33,
+  "pythonTestsPassed": 13,
+  "uiTestsPassed": true,
+  "gpuInferenceValidated": false,
+  "podLaunched": false
+}
