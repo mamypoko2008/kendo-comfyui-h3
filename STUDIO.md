@@ -21,7 +21,9 @@ MCP: `kie_image_models` lists capabilities and estimates; `kie_image_generate` a
 
 Validation: backend/MCP integration tests, mocked image/video generation, persisted image results, model/reference/format limits, light/dark UI and 320/390 px mobile layouts. **No actual paid KIE generation was submitted**; real provider results still need validation using the user's API key.
 
-Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.4`; publication receipt is in `runpod-studio-deployed.json` after publication. Previous `.3` and `.2` images remain available.
+Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.4`; publication receipt is in `runpod-studio-deployed.json`. Previous `.3` and `.2` images remain available.
+
+Studio.4 was published on 2026-10-12 by [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38260840535), source `254facc783f19a7fd34d32981f89b79b619d282f`, digest `sha256:c9234b484fee365c732e00dfd7ad08dc33e6bcb27c403a9c8d71a5a7340f5691`. The public amd64 manifest, entrypoint and disabled local-Qwen defaults were verified before updating the template. All 19 other templates, service names and storage settings were verified unchanged. No Pod was launched.
 
 Previous `.3` publication on 2026-10-12: [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037) succeeded. Digest: `sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda`.
 

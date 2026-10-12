@@ -1,9 +1,9 @@
 {
   "id": "9k0w23cmt8",
   "name": "Kendo-Seedance 2.5+Qwen",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.3",
-  "imageDigest": "sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda",
-  "sourceCommit": "b024c3ec27380ba75e17d7bb628abb68daf545b8",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.4",
+  "imageDigest": "sha256:c9234b484fee365c732e00dfd7ad08dc33e6bcb27c403a9c8d71a5a7340f5691",
+  "sourceCommit": "254facc783f19a7fd34d32981f89b79b619d282f",
   "containerDiskInGb": 100,
   "volumeInGb": 100,
   "volumeMountPath": "/workspace",
@@ -40,10 +40,10 @@
   "updateAppliedToTemplateOnly": true,
   "isPublic": true,
   "templateUrl": "https://console.runpod.io/hub/template/9k0w23cmt8",
-  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037",
+  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38260840535",
   "publicImagePullVerified": true,
   "gpuInferenceValidated": false,
-  "deployedAt": "2026-10-12T13:16:17.8687306+00:00",
+  "deployedAt": "2026-10-12T14:13:55.6617205+00:00",
   "localQwenEnabled": false,
   "automaticQwenDownload": false,
   "otherTemplatesVerifiedUnchanged": 19,
@@ -56,7 +56,8 @@
     "gpt-image-2"
   ],
   "paidKieGenerationValidated": false,
-  "nodeTestsPassed": 28,
+  "nodeTestsPassed": 29,
   "pythonTestsPassed": 13,
-  "uiTestsPassed": true
+  "uiTestsPassed": true,
+  "uiKeySetup": true
 }
