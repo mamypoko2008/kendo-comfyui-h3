@@ -45,12 +45,15 @@ const output=path.resolve(__dirname,'../studio-preview');
     assert.equal(await p.locator('.reference-slot').count(),30);assert.equal(await p.locator('#add-references').isDisabled(),true);
     await p.reload();await p.screenshot({path:path.join(output,'video-desktop.png'),fullPage:true});
 
-    let paid=[], imageHistory=[];
+    let paid=[], imageHistory=[], connected=true, configured=true, savedKeys=[], loginCodes=[];
+    await p.route('**/api/kendo/status',route=>route.fulfill({json:{mcp_url:url+'/mcp/ui-test-code'}}));
     await p.route('**/api/kie/**',async route=>{
       const req=route.request(),pathname=new URL(req.url()).pathname;
       if(pathname.endsWith('/image-models')) return route.continue();
       let data={};
-      if(pathname.endsWith('/status')) data={configured:true,authenticated:true,access_configured:true};
+      if(pathname.endsWith('/status')) data={configured,authenticated:connected,access_configured:true,mcp_url:connected?url+'/mcp/ui-test-code':null};
+      if(pathname.endsWith('/connect')) {loginCodes.push(req.postDataJSON().code);connected=true;data={authenticated:true};}
+      if(pathname.endsWith('/config')) {savedKeys.push(req.postDataJSON().api_key);configured=true;data={configured:true};}
       if(pathname.endsWith('/jobs')&&req.method()==='GET') data={jobs:imageHistory};
       if(pathname.endsWith('/upload')) data={url:'https://example.org/ref.png'};
       if(pathname.endsWith('/jobs')&&req.method()==='POST') {paid.push(req.postDataJSON());data={task_id:'mock-paid',kind:paid.at(-1).kind,model:paid.at(-1).model,state:'waiting',estimate_usd:2.05,created_at:new Date().toISOString(),result_urls:[]};}
@@ -119,6 +122,43 @@ const output=path.resolve(__dirname,'../studio-preview');
         await p.screenshot({path:path.join(output,`${page.replace('.html','')}-mobile-${width}.png`),fullPage:true});
       }
     }
-    assert.deepEqual(errors,[]);console.log('Studio UI passed: video + six KIE image models, shared connection, reference limits, 2K/4K/native, paid confirmation, dark theme and 320/390px layouts.');
+    connected=false;configured=false;
+    await p.setViewportSize({width:1440,height:1100});
+    await p.goto(url+'/seedance25.html');
+    await p.waitForFunction(()=>!document.querySelector('#kie-key').disabled);
+    assert.deepEqual(loginCodes,['ui-test-code']);
+    assert.equal(await p.locator('#connection-panel').getAttribute('open'),null);
+    await p.locator('#connection-panel>summary').click();
+    assert.equal(await p.locator('#mcp-url').inputValue(),url+'/mcp/ui-test-code');
+    assert.equal(await p.locator('#mcp-copy').isDisabled(),false);
+    const paidBeforeSetup=paid.length;
+    await p.locator('#kie-key').fill('fake-ui-key-1234');
+    await p.locator('#kie-key-save').click();
+    await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('เชื่อมต่อแล้ว'));
+    assert.deepEqual(savedKeys,['fake-ui-key-1234']);
+    assert.equal(await p.locator('#kie-key').inputValue(),'');
+    assert.equal(await p.evaluate(()=>JSON.stringify(localStorage).includes('fake-ui-key-1234')),false);
+    await p.screenshot({path:path.join(output,'connection-desktop.png'),fullPage:true});
+    for(const page of ['images.html','seedance25.html']) {
+      await p.setViewportSize({width:320,height:1100});await p.goto(url+'/'+page);
+      await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('เชื่อมต่อแล้ว'));
+      await p.locator('#connection-panel>summary').click();
+      assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${page} expanded connection overflow`);
+      assert.equal(await p.locator('#kie-key').inputValue(),'');
+      await p.screenshot({path:path.join(output,`connection-${page.replace('.html','')}-mobile.png`),fullPage:true});
+    }
+    connected=false;
+    await p.route('**/api/kendo/status',route=>route.fulfill({status:404,json:{error:'standalone'}}));
+    await p.goto(url+'/images.html');
+    await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('เข้า Studio'));
+    await p.locator('#connection-panel>summary').click();
+    await p.locator('.manual-connection>summary').click();
+    await p.locator('#access-code').fill(url+'/mcp/manual-test-code');
+    await p.locator('#connection-form button').click();
+    await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('เชื่อมต่อแล้ว'));
+    assert.equal(loginCodes.at(-1),'manual-test-code');
+    assert.equal(await p.locator('#access-code').inputValue(),'');
+    assert.equal(paid.length,paidBeforeSetup);
+    assert.deepEqual(errors,[]);console.log('Studio UI passed: image/video models, automatic MCP login, private key setup, manual URL fallback, paid confirmation and desktop/mobile layouts.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,5 +1,6 @@
 // Shared by the Studio HTTP API and the existing Kendo MCP tools.
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -83,7 +84,23 @@ export function createKieService(options = {}) {
   const dataDir = options.dataDir ?? process.env.KENDO_KIE_DATA_DIR ?? fileURLToPath(new URL('../.kendo-kie/', import.meta.url));
   const apiBase = options.apiBase ?? 'https://api.kie.ai';
   const uploadUrl = options.uploadUrl ?? 'https://kieai.redpandaai.co/api/file-stream-upload';
-  const key = () => (options.apiKey ?? process.env.KIE_API_KEY ?? '').trim();
+  const keyFile = path.join(dataDir, 'api-key');
+  const key = () => {
+    if (options.apiKey !== undefined) return options.apiKey.trim();
+    try { return readFileSync(keyFile, 'utf8').trim(); } catch (e) { if (e.code !== 'ENOENT') throw new KieError('Cannot read the saved KIE key', 503); }
+    return (process.env.KIE_API_KEY ?? '').trim();
+  };
+  async function setApiKey(value) {
+    if (typeof value !== 'string' || !/^[\x21-\x7e]{8,512}$/.test(value.trim())) throw new KieError('กรุณาใส่ KIE API Key ที่ถูกต้อง');
+    await fs.mkdir(dataDir, { recursive: true });
+    const temporary = keyFile + '.' + crypto.randomUUID() + '.tmp';
+    try {
+      await fs.writeFile(temporary, value.trim(), { mode: 0o600, flag: 'wx' });
+      await fs.rename(temporary, keyFile);
+      await fs.chmod(keyFile, 0o600);
+    } finally { await fs.unlink(temporary).catch(() => {}); }
+    return { configured: true };
+  }
   const inProgress = new Map();
   const pendingSubmissions = new Map();
   const jobsDir = path.join(dataDir, 'jobs');
@@ -227,5 +244,5 @@ export function createKieService(options = {}) {
     await readJob(id);
     return path.join(resultsDir, id, filename);
   }
-  return { configured: () => Boolean(key()), submit, uploadImage, getJob, history, resultFile };
+  return { configured: () => Boolean(key()), setApiKey, submit, uploadImage, getJob, history, resultFile };
 }

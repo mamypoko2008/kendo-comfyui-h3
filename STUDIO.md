@@ -1,6 +1,8 @@
 # Kendo-Seedance 2.5+Qwen (V3.1)
 
-Studio `v3.1.0-studio.3` adds **สร้างภาพนิ่ง** at `/images.html` with a model dropdown on the right. It uses the **same server-side KIE API key, access session and MCP URL** as the Seedance video page. Cloud image generation does not load Qwen on the Pod GPU. `KENDO_ENABLE_IMAGES=0` continues to disable the archived local Qwen tools/downloads.
+Studio `v3.1.0-studio.4` adds a collapsed **การเชื่อมต่อ KIE / MCP** section to both pages. Open it to paste and save a KIE API key or copy the MCP link for Claude, using the existing V3 connection endpoint for automatic Studio login. No Jupyter or terminal setup is required on the Pod. A manual MCP URL / Studio code field remains available for standalone deployments.
+
+**สร้างภาพนิ่ง** at `/images.html` has a model dropdown on the right. It uses the **same server-side KIE API key, access session and MCP URL** as the Seedance video page. Cloud image generation does not load Qwen on the Pod GPU. `KENDO_ENABLE_IMAGES=0` continues to disable the archived local Qwen tools/downloads.
 
 | Model | Reference limit | Output | Listed USD estimate |
 | --- | --- | --- | --- |
@@ -19,9 +21,11 @@ MCP: `kie_image_models` lists capabilities and estimates; `kie_image_generate` a
 
 Validation: backend/MCP integration tests, mocked image/video generation, persisted image results, model/reference/format limits, light/dark UI and 320/390 px mobile layouts. **No actual paid KIE generation was submitted**; real provider results still need validation using the user's API key.
 
-Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.3`; publication receipt is in `runpod-studio-deployed.json`. Previous `.2` image remains available, digest `sha256:b93b1f1614135f4c168450824106904b711bad0eb3dff2a122946a4bbb99f469`.
+Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.4`; publication receipt is in `runpod-studio-deployed.json` after publication. Previous `.3` and `.2` images remain available.
 
-Published on 2026-10-12: [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037) succeeded. The public amd64 image, source revision, entrypoint and disabled local-Qwen defaults were verified. Digest: `sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda`. The existing template now points at `.3`; its services/storage and all 19 other templates were verified unchanged. No Pod was launched. 28 Node tests, 13 Python tests and the mocked browser suite passed.
+Previous `.3` publication on 2026-10-12: [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037) succeeded. Digest: `sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda`.
+
+Studio.4 validation: 29 Node tests, 13 Python tests and the mocked browser suite passed. Checks cover key persistence across separate Studio/MCP instances, authenticated same-origin writes, no secret in status responses/browser storage, automatic connection, manual URL fallback, and expanded mobile layouts. No paid KIE job was submitted.
 
 The user confirmed that “Clear Tool” means **Krea 2**. No Krea 2 endpoint was found in the KIE model documentation/catalogue during this release check, so it is not exposed as a working KIE dropdown option. [Krea's official API guide](https://www.krea.ai/blog/krea-2-api-launch) documents its own API token and Medium/Large endpoints at `api.krea.ai`; that token is separate from the KIE key. Adding a separate provider is outside this release's shared-KIE-key scope.
 
@@ -59,7 +63,7 @@ docker build -f Dockerfile.studio -t kendo-comfyui-h3:studio .
 
 The inherited entrypoint reuses an existing ComfyUI installation on persistent volumes; it does not upgrade it automatically. Local Qwen creation remains paused; KIE image generation needs no additional GPU model setup.
 
-The `Build Kendo-Seedance 2.5+Qwen` GitHub workflow builds and publishes `v3.1.0-studio.3` when manually dispatched, or a `v3.1.*-studio.*` tag when pushed. For studio.3, `reuse_studio_runtime=true` uses `Dockerfile.studio-update` to retain the published studio.2 runtime and replace the Studio pages and shared KIE/MCP modules. `runpod-studio.json` describes the existing RunPod template named **Kendo-Seedance 2.5+Qwen**; release results are recorded in `runpod-studio-deployed.json` after verification.
+The `Build Kendo-Seedance 2.5+Qwen` GitHub workflow builds and publishes `v3.1.0-studio.4` when manually dispatched, or a `v3.1.*-studio.*` tag when pushed. For studio.4, `reuse_studio_runtime=true` uses `Dockerfile.studio-update` to retain the published studio.3 runtime and replace the Studio pages and shared KIE/MCP modules. `runpod-studio.json` describes the existing RunPod template named **Kendo-Seedance 2.5+Qwen**; release results are recorded in `runpod-studio-deployed.json` after verification.
 
 The published template's Connect service names are **Page HTML** (3000), **Comfy MCP** (3001), **ComfyUI** (8188), **JupyterLab** (8888), and **SSH** (22). These are RunPod template `portsConfig` values, separate from the exposed `ports` list. REST v1 does not accept `portsConfig`; apply the names through the template editor or GraphQL `saveTemplate` when recreating this template. The HTTP labels were verified on the running `ok4dx1nsvkpvlm` Pod without restarting it.
 
@@ -77,7 +81,11 @@ No model download has been performed on the development computer. Docker buildin
 
 ## KIE setup
 
-Set `KIE_API_KEY` in the Pod environment. It stays server-side. Use the Pod's `KENDO_MCP_CODE` to connect the video page; this is the same access code as the existing MCP URL. The page never asks for the provider API key. KIE tasks/results are stored in `/workspace/kendo-kie` and shared with `kie_seedance_generate`, `kie_job_status` and `kie_history`. Image generation uses `kie_image_generate` and `kie_image_models`; the previous Seedream MCP tool remains compatible.
+Open **Page HTML** (port 3000), expand **การเชื่อมต่อ KIE / MCP**, paste your KIE API key and click **บันทึก KIE Key**. The page connects Studio automatically using the same MCP link already available from V3. Copy that link into Claude's MCP connector. If automatic connection is unavailable, expand **ใส่ลิงก์ / รหัส Studio เอง**, paste the MCP URL or `KENDO_MCP_CODE` and connect first.
+
+The saved key stays in `/workspace/kendo-kie/api-key` with owner-only permissions; saving requires the Studio access session and a same-origin request. It is not returned to the browser or stored in browser storage. Both Studio and MCP reread it for each provider request, so a changed key takes effect without restarting either service. Keep the same persistent volume to retain it across Pod restarts. `KIE_API_KEY` in the environment remains a fallback; a UI-saved key takes precedence. Saving reports configuration, not provider verification, and does not submit a paid job.
+
+KIE tasks/results are stored in `/workspace/kendo-kie` and shared with `kie_seedance_generate`, `kie_job_status` and `kie_history`. Image generation uses `kie_image_generate` and `kie_image_models`; the previous Seedream MCP tool remains compatible.
 
 ComfyUI and KIE tools share `https://POD_ID-3001.proxy.runpod.net/mcp/ACCESS_CODE`. Studio.3 does not register `kendo_image_status`, `kendo_image_generate`, or `kendo_image_job_status`. The existing ComfyUI video/status/reference tools and KIE tools remain available on this same link.
 

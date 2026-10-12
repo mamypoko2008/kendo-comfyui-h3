@@ -240,31 +240,10 @@
     if (!response.ok) throw new Error(data.error || `KIE ${response.status}`);
     return data;
   }
-  async function checkConnection() {
-    try { connection = await api('status'); } catch { connection = null; }
-    const ready = connection?.configured && connection?.authenticated;
-    $('#connection-state').textContent = !connection ? 'โหมดออกแบบ · ยังไม่มีเซิร์ฟเวอร์ KIE' : !connection.configured ? 'ยังไม่ได้ตั้ง KIE_API_KEY บนเซิร์ฟเวอร์' : ready ? 'เชื่อมต่อแล้ว · พร้อมสร้าง' : 'พร้อมเชื่อมต่อด้วยรหัส Studio / MCP';
-    $('#connection-note').textContent = ready ? 'ตรวจสรุปและยืนยันค่าใช้จ่ายก่อนส่งงาน' : 'ดูสรุปได้โดยยังไม่ใช้เครดิต';
-    $('.draft-badge').textContent = ready ? 'KIE CONNECTED' : 'DESIGN PREVIEW';
-    $('#connection-help').textContent = 'API Key เก็บบนเซิร์ฟเวอร์ ใช้รหัส Studio / MCP เพื่อเข้าใช้งาน';
-    $('#connection-form button[type=submit]').disabled = !connection?.access_configured;
-    $('#mcp-details').hidden = !connection?.mcp_url;
-    $('#mcp-url').value = connection?.mcp_url || '';
-    if (ready) void loadHistory();
+  function updateConnection(status) {
+    connection=status;
+    if(connection?.configured && connection?.authenticated) void loadHistory();
   }
-  $('#connection-open').addEventListener('click', () => $('#connection-dialog').showModal());
-  $('#connection-close').addEventListener('click', () => $('#connection-dialog').close());
-  $('#connection-form').addEventListener('submit', async event => {
-    event.preventDefault();
-    const button = $('#connection-form button[type=submit]'); button.disabled = true;
-    try { await api('connect', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:$('#access-code').value})}); $('#access-code').value=''; $('#connection-message').textContent='เชื่อมต่อแล้ว'; await checkConnection(); }
-    catch (e) { $('#connection-message').textContent=e.message; }
-    finally { button.disabled=!connection?.access_configured; }
-  });
-  $('#mcp-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText($('#mcp-url').value); $('#connection-message').textContent='คัดลอก URL แล้ว'; }
-    catch { $('#mcp-url').select(); $('#connection-message').textContent='เลือก URL แล้ว กรุณาคัดลอก'; }
-  });
   $('#confirm-generate').addEventListener('click', async () => {
     if (busy || !review) return;
     busy=true; $('#confirm-generate').disabled=true; $('#generate').disabled=true;
@@ -314,5 +293,5 @@
     },4000);
   }
   window.addEventListener('beforeunload', () => slots.filter(Boolean).forEach(item => URL.revokeObjectURL(item.url)));
-  applyModel(); void checkConnection();
+  applyModel(); void window.KendoConnection.init(updateConnection);
 })();

@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#faf9fb">
   <title>Kendo Studio | สร้างภาพนิ่ง</title>
   <link rel="stylesheet" href="./seedance25.css">
+  <script src="./studio-connection.js" defer></script>
   <script src="./images.js" defer></script>
 </head>
 <body>
@@ -46,7 +47,24 @@
     </aside>
     <section class="workspace" aria-label="ผลลัพธ์ภาพนิ่ง">
       <div class="workspace-top"><div><p class="eyebrow">YOUR CREATIVE SPACE</p><h2>ผลงานของฉัน</h2></div><span class="draft-badge"><i aria-hidden="true"></i> DESIGN PREVIEW</span></div>
-      <section class="connection-card"><div><b>KIE / MCP</b><small id="connection-state">กำลังตรวจการเชื่อมต่อ…</small></div><button id="connection-open" type="button">การเชื่อมต่อ ↗</button></section>
+      <details class="connection-panel" id="connection-panel">
+        <summary><span><b>การเชื่อมต่อ KIE / MCP</b><small id="connection-state">กำลังตรวจการเชื่อมต่อ…</small></span><span class="connection-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="connection-content">
+          <label class="connection-label" for="mcp-url">ลิงก์ MCP · สำหรับ Claude</label>
+          <div class="mcp-url-row"><input id="mcp-url" readonly type="text" placeholder="ลิงก์จะขึ้นอัตโนมัติเมื่อเปิดบน Pod"><button id="mcp-copy" type="button" disabled>คัดลอก</button></div>
+          <form id="kie-key-form" autocomplete="off">
+            <label class="connection-label" for="kie-key">KIE API Key</label>
+            <input id="kie-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="วาง KIE API Key ที่นี่" required disabled>
+            <small id="kie-key-state">กำลังตรวจการเชื่อมต่อ…</small>
+            <button id="kie-key-save" type="submit" class="review-generate" disabled>บันทึก KIE Key</button>
+          </form>
+          <p class="section-note">ใช้คีย์เดียวกับภาพ วิดีโอ และ MCP · บันทึกบน volume ของ Pod</p>
+          <details class="manual-connection"><summary>ใส่ลิงก์ / รหัส Studio เอง</summary>
+            <form id="connection-form"><label class="connection-label" for="access-code">ลิงก์ MCP หรือรหัส Studio</label><input id="access-code" type="password" autocomplete="current-password" placeholder="https://…/mcp/… หรือ kendo-…" required><button type="submit">เชื่อมต่อ Studio</button></form>
+          </details>
+          <p id="connection-message" class="review-note" aria-live="polite"></p>
+        </div>
+      </details>
       <section class="image-model-picker" aria-labelledby="image-model-label">
         <div class="section-line"><label id="image-model-label" for="image-model">เลือกโมเดลสร้างภาพ</label><span class="model-badge">KIE IMAGE</span></div>
         <select id="image-model" disabled><option>กำลังโหลดโมเดล…</option></select>
@@ -72,6 +90,5 @@
     </section>
   </main>
   <dialog id="review-dialog" aria-labelledby="review-title"><form method="dialog"><div class="section-line"><h2 id="review-title">ยืนยันสร้างภาพนิ่ง</h2><button class="dialog-close" aria-label="ปิดสรุป" value="cancel">×</button></div><p class="section-note">ตรวจภาพและการตั้งค่าก่อนสร้าง</p><div id="review-images" class="review-images"></div><p id="review-prompt"></p><dl id="review-details"></dl><p class="review-note">นี่คือตัวอย่างหน้าเว็บ ยังไม่มีการส่งงานหรือหักเครดิต</p><button id="confirm-generate" class="review-generate" type="button" hidden>ยืนยันสร้างผ่าน KIE</button><button class="review-done" value="done">กลับไปแก้ไข</button></form></dialog>
-  <dialog id="connection-dialog" aria-labelledby="connection-title"><form id="connection-form"><div class="section-line"><h2 id="connection-title">เชื่อมต่อ KIE / MCP</h2><button type="button" class="dialog-close" id="connection-close" aria-label="ปิดการเชื่อมต่อ">×</button></div><p class="section-note" id="connection-help">ใช้ API Key เดียวกันสำหรับภาพและวิดีโอ</p><label class="connection-label" for="access-code">รหัสเข้า Studio / MCP</label><input id="access-code" type="password" autocomplete="current-password" placeholder="รหัสของ Pod นี้"><button type="submit" class="review-generate">เชื่อมต่อ</button><p id="connection-message" class="review-note" aria-live="polite"></p><section id="mcp-details" hidden><label class="connection-label" for="mcp-url">URL สำหรับ Claude / MCP</label><div class="mcp-url-row"><input id="mcp-url" readonly type="text"><button id="mcp-copy" type="button">คัดลอก</button></div></section></form></dialog>
 </body>
 </html>

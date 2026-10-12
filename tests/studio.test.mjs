@@ -199,6 +199,33 @@ test('KIE image results share persistent history and retain every returned PNG',
   } finally {await fs.rm(dir,{recursive:true,force:true});}
 });
 
+test('UI key is private, persistent and shared across separate Studio/MCP service instances',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'kendo-kie-key-'));
+  let calls=0;
+  const provider=async(url,init)=>{calls++;assert.equal(init.headers.Authorization,'Bearer fake-ui-key-0002');return Response.json({code:200,data:{taskId:'shared-key-job'}});};
+  const studio=createKieService({dataDir:dir,fetchImpl:provider});
+  const mcp=createKieService({dataDir:dir,fetchImpl:provider});
+  const server=createStudioServer({code:'ui-setup-code',service:studio});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const post=(route,input,cookie,origin=base)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(input)});
+  try {
+    assert.equal((await post('/api/kie/config',{api_key:'fake-ui-key-0001'})).status,401);
+    const login=await post('/api/kie/connect',{code:'ui-setup-code'}),cookie=login.headers.get('set-cookie').split(';')[0];
+    assert.equal((await post('/api/kie/config',{api_key:'fake-ui-key-0001'},cookie,'https://foreign.example')).status,403);
+    assert.equal((await post('/api/kie/config',{api_key:'short'},cookie)).status,400);
+    const saved=await post('/api/kie/config',{api_key:'fake-ui-key-0001'},cookie);
+    assert.deepEqual(await saved.json(),{configured:true});assert.equal(calls,0);
+    assert.equal(mcp.configured(),true);
+    if(process.platform!=='win32') assert.equal((await fs.stat(path.join(dir,'api-key'))).mode & 0o777,0o600);
+    await post('/api/kie/config',{api_key:'fake-ui-key-0002'},cookie);
+    const status=await (await fetch(base+'/api/kie/status',{headers:{Cookie:cookie}})).json();
+    assert.equal(status.configured,true);assert.equal(JSON.stringify(status).includes('fake-ui-key'),false);
+    assert.equal((await mcp.submit(video)).task_id,'shared-key-job');assert.equal(calls,1);
+    assert.equal(createKieService({dataDir:dir}).configured(),true);
+  } finally {await new Promise(resolve=>server.close(resolve));await fs.rm(dir,{recursive:true,force:true});}
+});
+
 test('Studio requires the access code, same-origin requests and cost confirmation',async()=>{
   let submits=0;
   const server=createStudioServer({code:'studio-test-code',service:{configured:()=>true,history:async()=>[],submit:async args=>{submits++;return {task_id:'test',model:args.model};}}});

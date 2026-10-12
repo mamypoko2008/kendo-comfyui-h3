@@ -9,7 +9,7 @@ import { IMAGE_MODELS } from './image-models.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime' };
-const STATIC_FILES = new Set(['seedance25.html', 'seedance25.css', 'seedance25.js', 'images.html', 'images.js', 'workflow-images.js']);
+const STATIC_FILES = new Set(['seedance25.html', 'seedance25.css', 'seedance25.js', 'images.html', 'images.js', 'workflow-images.js', 'studio-connection.js']);
 export function createStudioServer(options = {}) {
   const service = options.service ?? createKieService();
   const code = options.code ?? process.env.KENDO_MCP_CODE ?? '';
@@ -68,6 +68,10 @@ export function createStudioServer(options = {}) {
       }
       if (url.pathname.startsWith('/api/kie/')) {
         if (!authenticated(req)) return json(res, 401, { error: 'กรุณาเชื่อมต่อด้วยรหัส Studio / MCP ก่อน' });
+        if (url.pathname === '/api/kie/config' && req.method === 'POST') {
+          const input = await jsonBody(req);
+          return json(res, 200, await service.setApiKey(input.api_key));
+        }
         if (url.pathname === '/api/kie/upload' && req.method === 'POST') {
           const modelId = url.searchParams.get('model');
           if (modelId && !Object.hasOwn(IMAGE_MODELS, modelId)) throw new KieError('Invalid image model');
