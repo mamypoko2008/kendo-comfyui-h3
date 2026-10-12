@@ -1,0 +1,19 @@
+# Kendo V4 + Qwen Image 2.1
+
+A separate copy of the V3 H3 video interface adds **สร้างภาพนิ่ง** at `/images-v4.html`. The video page is `/v4-image.html` and is the new landing page. Existing V3, V4 upscale and KIE Studio images/templates are retained.
+
+This variant uses **Qwen Image 2.1**, not the Qwen3.5-9B vision-language assistant. The graph uses the standard [ComfyUI Qwen workflow](https://docs.comfy.org/tutorials/image/qwen/qwen-image-2-1), with the checked-in official template as the settings reference. It uses INT8 standard diffusion/encoder weights, the Qwen VAE, 25 Euler/simple steps and CFG 1. It does not add the optional prompt enhancer, portrait LoRA, Detail Daemon or Flux refinement stage.
+
+The page defaults to 2K: approximately 2048 × 2048 pixels at 1:1, or the same pixel budget at another aspect ratio. Image edits follow the first reference image's aspect ratio. References start with three slots, add one per click, and accept up to ten JPG/PNG/WEBP images, 30 MB each. Transparent PNG generation is optional. Steps and seed are in a collapsed settings section. **สร้างภาพนิ่ง** submits directly to the local ComfyUI queue.
+
+The preview and image history offer **ใช้เป็นภาพอ้างอิงในวิดีโอ**. This transfers the selected PNG to the copied V3 video form without submitting a video. Both pages use one ComfyUI instance and one MCP URL. Native tools `kendo_image_status`, `kendo_image_generate` and `kendo_image_job_status` use the same standard graph as the page; this variant only advertises the `qwen21` model. KIE credentials are not required for either local image or H3 video generation. Pod rental still applies.
+
+Models and results stay on `/workspace`. The standard Qwen files total 17,283,091,112 bytes (about 17.28 GB); H3 files total about 44 GB. Downloads reuse exact-size files and resumable partials, and check the actual model-volume free space with a 5 GiB reserve. H3 downloads first, then standard Qwen. If H3 fails, the installer still attempts Qwen when space permits; readiness for the image page is independent of H3 readiness. ComfyUI and pages start while downloads run.
+
+Use a separate persistent volume for this new variant. The pinned base image includes ComfyUI revision `0df64eb242b7c5759c3e86afd5d1846d923b1033` with native Qwen 2.1 support. Attaching an older V3 volume preserves its existing ComfyUI core; missing nodes are reported rather than silently overwriting the installation.
+
+Docker image: `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.2.0-image.1`. `Dockerfile.v4-image` pins the published studio.4 runtime by digest and installs the V3-derived pages and image additions. The separate `build-v4-image.yml` workflow only runs on manual dispatch, avoiding the existing V4 release workflow's tag patterns. `runpod-v4-image.json` specifies a separate **Kendo-ComfyUI-H3 V4 + Qwen Image 2.1** template with 100 GB container/volume defaults and the existing five ports.
+
+Validation: 33 Node tests, 13 Python tests and the mocked Chrome UI suite passed. Checks include standard-template settings, ordered edit references, identical V3 video graph apart from its output prefix, shared MCP graph, missing nodes/files, download space accounting, direct image submission, image-to-video handoff, isolated image history, and light/dark desktop plus 320/390 px mobile layouts. All generation in tests was mocked. **GPU inference, output quality, peak VRAM and generation time remain unvalidated.** No paid Pod or real model download was started for this release.
+
+Publication details are recorded in `runpod-v4-image-deployed.json` after image and template verification.

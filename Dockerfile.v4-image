@@ -1,0 +1,14 @@
+# Separate V3 video + standard local Qwen variant. Existing images remain intact.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.4@sha256:c9234b484fee365c732e00dfd7ad08dc33e6bcb27c403a9c8d71a5a7340f5691
+ENV KENDO_IMAGE_VERSION=4.2.0-image.1 KENDO_AUTO_DOWNLOAD_MODELS=1 KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_ENABLE_IMAGES=1 KENDO_IMAGE_MODELS="" KENDO_IMAGE_DEFAULT_MODEL=qwen21 \
+    KENDO_IMAGE_DEFAULT_RESOLUTION=2048 KENDO_IMAGE_PAGE_PATH=/images-v4.html \
+    KENDO_IMAGE_WORKFLOW_FILE=/opt/kendo-page/workflow-qwen-v4.js \
+    KENDO_WORKFLOW_FILE=/opt/kendo-page/workflow-video-v4-image.js KENDO_MCP_NAME="Kendo V4 H3 + Qwen Image"
+COPY web/v4-image.html /opt/kendo-page/index.html
+COPY web/v4-image.html web/v4-image.js web/images-v4.html web/images-v4.js web/images-v4.css web/workflow-qwen-v4.js web/workflow-video-v4-image.js web/workflow-images.js web/workflow-v3-beta.js web/v3-beta.css web/files-v4-image.html web/files.js /opt/kendo-page/
+COPY scripts/page_server_v4_image.py /opt/kendo/page_server.py
+COPY scripts/page_server_v3_beta.py scripts/download_models_v4_image.py scripts/download_image_models.py /opt/kendo/
+COPY scripts/download-v4-image.sh /opt/kendo/download-models.sh
+COPY mcp/image-tools.mjs /opt/kendo-mcp/
+RUN chmod 0755 /opt/kendo/download-models.sh && python3.12 -m compileall -q /opt/kendo

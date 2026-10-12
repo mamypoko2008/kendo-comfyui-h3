@@ -1,0 +1,32 @@
+name: Build Kendo V4 H3 + Qwen Image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+        working-directory: mcp
+      - run: node --test tests/workflow-v4-image.test.cjs tests/workflow-v3-beta.test.cjs tests/mcp-v3-beta.test.mjs
+      - run: python -m unittest discover -s tests -p test_v4_image.py -v
+      - run: python -m unittest discover -s tests -p test_v3_beta.py -v
+      - run: bash -n scripts/download-v4-image.sh
+      - name: Free space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish
+        run: |
+          docker build -f Dockerfile.v4-image --label org.opencontainers.image.revision="${GITHUB_SHA}" -t ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:v4.2.0-image.1 .
+          docker push ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:v4.2.0-image.1

@@ -1,0 +1,11 @@
+**
+!Dockerfile.v4-image
+!web/
+!web/*.html
+!web/*.css
+!web/*.js
+!scripts/
+!scripts/*.py
+!scripts/*.sh
+!mcp/
+!mcp/image-tools.mjs

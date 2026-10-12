@@ -1,0 +1,31 @@
+{
+  "name": "Kendo-ComfyUI-H3 V4 + Qwen Image 2.1",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.2.0-image.1",
+  "category": "NVIDIA",
+  "containerDiskInGb": 100,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 100,
+  "volumeMountPath": "/workspace",
+  "ports": [
+    "3000/http",
+    "3001/http",
+    "8188/http",
+    "8888/http",
+    "22/tcp"
+  ],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "1",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MCP_HOST": "0.0.0.0",
+    "KENDO_ENABLE_IMAGES": "1",
+    "KENDO_IMAGE_MODELS": "",
+    "KENDO_IMAGE_PAGE_PATH": "/images-v4.html",
+    "KENDO_IMAGE_DEFAULT_MODEL": "qwen21",
+    "KENDO_IMAGE_DEFAULT_RESOLUTION": "2048"
+  },
+  "readme": "Kendo V4 + Qwen Image 2.1: a separate copy of V3 H3 video generation with a local still-image page. Page HTML: 3000 (/v4-image.html and /images-v4.html), Comfy MCP: 3001, ComfyUI: 8188, JupyterLab: 8888. One ComfyUI instance and MCP URL serve video and local Qwen. No KIE key is needed for local generation; Pod rental applies.\n\nQwen Image 2.1 standard workflow, 25 Euler/simple steps, CFG 1, 2K default, optional transparent PNG, text-to-image or editing with up to 10 references. Reference slots start at 3 and add one per click. Generate directly; completed images can be sent to the video page as references. Models download to the persistent volume on first boot with resume, size verification and free-space checks. H3 files total about 44 GB and Qwen standard INT8 files about 17.28 GB; 100 GB storage defaults. Use a separate volume for this variant because its ComfyUI core supports native Qwen 2.1. GPU inference has not been validated in this release. V3, V4 upscale and the KIE Studio template are unchanged."
+}
