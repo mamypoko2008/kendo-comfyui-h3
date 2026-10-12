@@ -23,7 +23,7 @@ Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) ke
 
 Published on 2026-10-12: [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037) succeeded. The public amd64 image, source revision, entrypoint and disabled local-Qwen defaults were verified. Digest: `sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda`. The existing template now points at `.3`; its services/storage and all 19 other templates were verified unchanged. No Pod was launched. 28 Node tests, 13 Python tests and the mocked browser suite passed.
 
-The user confirmed that “Clear Tool” means **Krea 2**. No Krea 2 endpoint was found in the KIE model documentation/catalogue during this release check, so it is not exposed as a working KIE dropdown option. Adding a separate provider is outside this release's shared-KIE-key scope.
+The user confirmed that “Clear Tool” means **Krea 2**. No Krea 2 endpoint was found in the KIE model documentation/catalogue during this release check, so it is not exposed as a working KIE dropdown option. [Krea's official API guide](https://www.krea.ai/blog/krea-2-api-launch) documents its own API token and Medium/Large endpoints at `api.krea.ai`; that token is separate from the KIE key. Adding a separate provider is outside this release's shared-KIE-key scope.
 
 ## Archived Qwen 2.1 + Flux Klein workflow
 
