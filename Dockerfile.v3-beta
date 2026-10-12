@@ -25,7 +25,7 @@ ENV PATH=/opt/node/bin:$PATH
 
 COPY mcp/package.json mcp/package-lock.json /opt/kendo-mcp/
 RUN cd /opt/kendo-mcp && /opt/node/bin/npm ci --omit=dev --no-audit --no-fund
-COPY mcp/server.mjs mcp/kie-client.mjs mcp/kie-tools.mjs mcp/studio-server.mjs mcp/image-tools.mjs /opt/kendo-mcp/
+COPY mcp/server.mjs mcp/kie-client.mjs mcp/kie-tools.mjs mcp/studio-server.mjs mcp/image-tools.mjs mcp/image-models.mjs /opt/kendo-mcp/
 
 COPY scripts/models_v3_beta.py scripts/download_models_v3_beta.py scripts/detect_runpod_runtime.py /opt/kendo/
 COPY scripts/download-v3-beta.sh /opt/kendo/download-models.sh

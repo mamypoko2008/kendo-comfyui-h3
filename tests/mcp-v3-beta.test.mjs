@@ -76,7 +76,7 @@ test('wrong or missing access code is a 404, never a 401 that triggers OAuth', a
 
 test('exposes the Kendo tool set and instructions', async () => {
   const tools = (await client.listTools()).tools.map(t => t.name).sort();
-  assert.deepEqual(tools, ['kendo_cancel', 'kendo_generate', 'kendo_history', 'kendo_image_generate', 'kendo_image_job_status', 'kendo_image_status', 'kendo_job_status', 'kendo_list_references', 'kendo_status', 'kendo_upload_from_url', 'kie_history', 'kie_job_status', 'kie_seedance_generate', 'kie_seedream_generate', 'kie_status']);
+  assert.deepEqual(tools, ['kendo_cancel', 'kendo_generate', 'kendo_history', 'kendo_image_generate', 'kendo_image_job_status', 'kendo_image_status', 'kendo_job_status', 'kendo_list_references', 'kendo_status', 'kendo_upload_from_url', 'kie_history', 'kie_image_generate', 'kie_image_models', 'kie_job_status', 'kie_seedance_generate', 'kie_seedream_generate', 'kie_status']);
   assert.match(client.getInstructions(), /<Picture 1>/);
 });
 
@@ -90,6 +90,9 @@ test('video-only Studio keeps ComfyUI and KIE in one MCP without exposing Qwen g
     const names = (await videoClient.listTools()).tools.map(t => t.name);
     assert.ok(names.includes('kendo_generate'));
     assert.ok(names.includes('kie_seedance_generate'));
+    assert.ok(names.includes('kie_image_generate'));
+    const catalog = await videoClient.callTool({name:'kie_image_models',arguments:{}});
+    assert.equal(Object.keys(catalog.structuredContent.models).length,6);
     assert.equal(names.some(name => name.startsWith('kendo_image_')), false);
     assert.doesNotMatch(videoClient.getInstructions(), /Local Qwen image flow/);
     const blocked = await videoClient.callTool({ name: 'kendo_image_generate', arguments: { prompt: 'A cup' } });

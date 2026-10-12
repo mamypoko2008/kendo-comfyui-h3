@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { IMAGE_MODELS, IMAGE_MODEL_IDS, imageEstimate } from './image-models.mjs';
 
 export const IMAGE_RATIOS = ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9'];
 export const VIDEO_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'];
@@ -27,22 +28,43 @@ export function publicUrl(value) {
 }
 export function buildKiePayload(args = {}) {
   const kind = choose(args.kind, ['image', 'video'], 'kind');
-  const video = VIDEO_MODELS[choose(args.model ?? 'seedance-2-5', Object.keys(VIDEO_MODELS), 'video model')];
-  const maxPrompt = kind === 'image' ? 5000 : video.maxPrompt;
-  const maxImages = kind === 'image' ? 10 : video.maxImages;
+  const imageId = kind === 'image' ? choose(args.model ?? 'seedream-5-pro', IMAGE_MODEL_IDS, 'image model') : null;
+  const image = IMAGE_MODELS[imageId];
+  const video = kind === 'video' ? VIDEO_MODELS[choose(args.model ?? 'seedance-2-5', Object.keys(VIDEO_MODELS), 'video model')] : null;
+  const maxPrompt = image?.maxPrompt ?? video.maxPrompt;
+  const maxImages = image?.maxImages ?? video.maxImages;
+  const minPrompt = image?.minPrompt ?? 1;
   const prompt = typeof args.prompt === 'string' ? args.prompt.trim() : '';
-  if (!prompt || prompt.length > maxPrompt) throw new KieError(`Prompt must contain 1-${maxPrompt} characters`);
+  if (prompt.length < minPrompt || prompt.length > maxPrompt) throw new KieError(`Prompt must contain ${minPrompt}-${maxPrompt} characters`);
   const references = args.reference_urls ?? [];
   if (!Array.isArray(references) || references.length > maxImages) throw new KieError(`Maximum ${maxImages} image references`);
   const urls = references.map(publicUrl);
-  const input = { prompt, aspect_ratio: choose(args.ratio ?? '16:9', kind === 'image' ? IMAGE_RATIOS : VIDEO_RATIOS, 'aspect ratio') };
+  const input = { prompt, aspect_ratio: choose(args.ratio ?? (image ? '1:1' : '16:9'), image?.ratios ?? VIDEO_RATIOS, 'aspect ratio') };
   let estimate;
   if (kind === 'image') {
-    input.quality = choose(args.quality ?? 'basic', ['basic', 'high'], 'quality');
-    input.output_format = choose(args.output_format ?? 'png', ['png', 'jpeg'], 'output format');
-    input.nsfw_checker = true;
-    if (urls.length) input.image_urls = urls;
-    estimate = (input.quality === 'high' ? .07 : .035) + Math.max(0, urls.length - 1) * .0025;
+    if (args.quality !== undefined && imageId !== 'seedream-5-pro') throw new KieError('quality is only supported by Seedream');
+    if (args.quality !== undefined) choose(args.quality, ['basic', 'high'], 'quality');
+    const resolution = choose(args.resolution ?? (args.quality ? (args.quality === 'high' ? '2K' : '1K') : image.resolutions.includes('2K') ? '2K' : 'native'), image.resolutions, 'resolution');
+    if (args.quality && args.resolution && (args.quality === 'high' ? '2K' : '1K') !== resolution) throw new KieError('quality and resolution conflict');
+    if (image.formats.length) input.output_format = choose(args.output_format ?? 'png', image.formats, 'output format');
+    else if (args.output_format !== undefined) throw new KieError('This model chooses its output format');
+    if (imageId === 'seedream-5-pro') {
+      input.quality = resolution === '2K' ? 'high' : 'basic'; input.nsfw_checker = true;
+      if (urls.length) input.image_urls = urls;
+    } else if (imageId === 'flux-2-pro') {
+      input.resolution = resolution; input.nsfw_checker = true;
+      if (urls.length) input.input_urls = urls;
+    } else if (imageId === 'qwen-3-pro') {
+      input.resolution = resolution; input.image_size = input.aspect_ratio; delete input.aspect_ratio;
+      input.prompt_extend = true; input.nsfw_checker = true;
+      if (urls.length) input.image_urls = urls;
+    } else if (imageId === 'nano-banana-pro') {
+      input.resolution = resolution; input.image_input = urls;
+    } else if (imageId === 'gpt-image-2') {
+      input.resolution = resolution;
+      if (urls.length) input.input_urls = urls;
+    } else if (urls.length) input.image_urls = urls;
+    estimate = imageEstimate(image, resolution, urls.length);
   } else {
     input.resolution = choose(args.resolution ?? '720p', Object.keys(video.rates), 'resolution');
     input.duration = args.duration ?? 10;
@@ -53,7 +75,7 @@ export function buildKiePayload(args = {}) {
     if (urls.length) input.reference_image_urls = urls;
     estimate = video.rates[input.resolution] * input.duration;
   }
-  return { payload: { model: kind === 'image' ? (urls.length ? MODELS.imageReference : MODELS.image) : video.model, input }, estimate_usd: Number(estimate.toFixed(4)), kind };
+  return { payload: { model: kind === 'image' ? (urls.length ? image.editModel : image.textModel) : video.model, input }, estimate_usd: Number(estimate.toFixed(4)), kind };
 }
 
 export function createKieService(options = {}) {

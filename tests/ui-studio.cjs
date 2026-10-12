@@ -45,13 +45,15 @@ const output=path.resolve(__dirname,'../studio-preview');
     assert.equal(await p.locator('.reference-slot').count(),30);assert.equal(await p.locator('#add-references').isDisabled(),true);
     await p.reload();await p.screenshot({path:path.join(output,'video-desktop.png'),fullPage:true});
 
-    let paid=[];
+    let paid=[], imageHistory=[];
     await p.route('**/api/kie/**',async route=>{
       const req=route.request(),pathname=new URL(req.url()).pathname;
+      if(pathname.endsWith('/image-models')) return route.continue();
       let data={};
       if(pathname.endsWith('/status')) data={configured:true,authenticated:true,access_configured:true};
-      if(pathname.endsWith('/jobs')&&req.method()==='GET') data={jobs:[]};
-      if(pathname.endsWith('/jobs')&&req.method()==='POST') {paid.push(req.postDataJSON());data={task_id:'mock-paid',kind:'video',model:'bytedance/seedance-2',state:'waiting',estimate_usd:2.05,created_at:new Date().toISOString(),result_urls:[]};}
+      if(pathname.endsWith('/jobs')&&req.method()==='GET') data={jobs:imageHistory};
+      if(pathname.endsWith('/upload')) data={url:'https://example.org/ref.png'};
+      if(pathname.endsWith('/jobs')&&req.method()==='POST') {paid.push(req.postDataJSON());data={task_id:'mock-paid',kind:paid.at(-1).kind,model:paid.at(-1).model,state:'waiting',estimate_usd:2.05,created_at:new Date().toISOString(),result_urls:[]};}
       await route.fulfill({json:data});
     });
     await p.reload();await p.waitForFunction(()=>document.querySelector('#connection-state').textContent.includes('เชื่อมต่อแล้ว'));
@@ -60,21 +62,63 @@ const output=path.resolve(__dirname,'../studio-preview');
     await p.locator('#confirm-generate').click();await p.waitForFunction(()=>document.querySelector('#job-notice').textContent.includes('ส่งงานแล้ว'));
     assert.equal(paid.length,1);assert.equal(paid[0].model,'seedance-2');assert.equal(paid[0].confirm_cost,true);
 
-    assert.equal(await p.locator('nav a[href="./images.html"]').count(),0);
-    await p.goto(url+'/images.html?model=qwen21-klein');
-    await p.waitForURL('**/seedance25.html');
-    assert.equal(await p.locator('#video-model').count(),1);
-    assert.equal(await p.locator('#image-model').count(),0);
-    await p.screenshot({path:path.join(output,'video-only-desktop.png'),fullPage:true});
-    await p.locator('#theme').click();
-    await p.screenshot({path:path.join(output,'video-only-dark.png'),fullPage:true});
+    assert.equal(await p.locator('nav a[href="./images.html"]').count(),1);
+    await p.locator('nav a[href="./images.html"]').click();
+    await p.waitForFunction(()=>document.querySelector('#image-model').disabled===false);
+    assert.equal(await p.locator('h1').textContent(),'สร้างภาพนิ่ง');
+    assert.equal(await p.locator('#image-model option').count(),6);
+    assert.equal(await p.locator('#resolution').inputValue(),'2K');
+    assert.equal(await p.locator('#price').textContent(),'$0.07');
+    assert.equal(await p.locator('.reference-slot').count(),3);
+    await p.locator('#add-references').click();assert.equal(await p.locator('.reference-slot').count(),4);
+    assert.ok((await p.locator('#image-model').boundingBox()).x>(await p.locator('.composer').boundingBox()).width);
+    await p.locator('.upload-input input').first().setInputFiles(refs(4));
+    await p.waitForFunction(()=>document.querySelector('#image-count').textContent==='4 / 10');
+    assert.equal(await p.locator('#price').textContent(),'$0.0775');
+    await p.locator('#image-model').selectOption('qwen-3-pro');
+    assert.equal(await p.locator('#image-count').textContent(),'4 / 3');
+    assert.equal(await p.locator('.remove-image').count(),4);
+    await p.locator('#prompt').fill('A premium glass perfume bottle');
+    await p.locator('#generate').click();assert.equal(await p.locator('#review-dialog').isVisible(),false);
+    await p.locator('.remove-image').last().click();
+    assert.equal(await p.locator('#price').textContent(),'$0.0675');
+    for(const id of ['flux-2-pro','grok-image-2','nano-banana-pro','gpt-image-2']) {
+      await p.locator('#image-model').selectOption(id);
+      assert.equal(await p.locator('#format-control').isVisible(),id==='nano-banana-pro');
+      if(id==='grok-image-2') {
+        assert.equal(await p.locator('#resolution').inputValue(),'native');
+        assert.equal(await p.locator('#resolution option').count(),1);
+      }
+    }
+    await p.locator('#resolution').selectOption('4K');assert.equal(await p.locator('#price').textContent(),'$0.08');
+    await p.locator('#image-model').selectOption('qwen-3-pro');assert.equal(await p.locator('#resolution').inputValue(),'2K');
+    const before=paid.length;
+    await p.locator('#generate').click();assert.equal(paid.length,before);
+    await p.locator('#confirm-generate').click();
+    await p.waitForFunction(()=>document.querySelector('#job-notice').textContent.includes('ส่งงานแล้ว'));
+    assert.equal(paid.length,before+1);assert.equal(paid.at(-1).kind,'image');assert.equal(paid.at(-1).model,'qwen-3-pro');
+    assert.equal(paid.at(-1).reference_urls.length,3);assert.equal(paid.at(-1).resolution,'2K');assert.equal(paid.at(-1).confirm_cost,true);
+    imageHistory=[{task_id:'image-success',kind:'image',model:'qwen3/pro-text-to-image',state:'success',estimate_usd:.06,result_urls:['/mock-one.png','/mock-two.png']},{task_id:'video-success',kind:'video',model:'bytedance/seedance-2',state:'success',estimate_usd:2.05,result_urls:['/mock.mp4']}];
+    await p.route('**/mock-*.png',route=>route.fulfill({body:fixture,contentType:'image/png'}));
+    await p.reload();await p.waitForFunction(()=>document.querySelector('#history-count').textContent==='1 งาน');
+    assert.equal(await p.locator('.job-card').count(),1);
+    assert.equal(await p.locator('.job-card button').count(),2);
+    await p.locator('.job-card button').last().click();
+    assert.match(await p.locator('#preview-canvas>img').getAttribute('src'),/mock-two/);
+    imageHistory=[];
+    await p.reload();await p.waitForFunction(()=>document.querySelector('#image-model').disabled===false);
+    await p.screenshot({path:path.join(output,'image-kie-desktop.png'),fullPage:true});
+    await p.locator('#theme').click();await p.screenshot({path:path.join(output,'image-kie-dark.png'),fullPage:true});
     for(const width of [390,320]) {
       await p.setViewportSize({width,height:1100});
-      await p.goto(url+'/seedance25.html');
-      assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`video-only ${width}px overflow`);
-      assert.equal(await p.locator('nav a[href="./images.html"]').count(),0);
-      await p.screenshot({path:path.join(output,`video-only-mobile-${width}.png`),fullPage:true});
+      for(const page of ['images.html','seedance25.html']) {
+        await p.goto(url+'/'+page);
+        if(page==='images.html') await p.waitForFunction(()=>document.querySelector('#image-model').disabled===false);
+        assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${page} ${width}px overflow`);
+        assert.equal(await p.locator('nav a[href="./images.html"]').count(),1);
+        await p.screenshot({path:path.join(output,`${page.replace('.html','')}-mobile-${width}.png`),fullPage:true});
+      }
     }
-    assert.deepEqual(errors,[]);console.log('Studio UI passed: Seedance models, price/limits, paid confirmation, Qwen bookmark redirect, dark theme, 320/390px layouts.');
+    assert.deepEqual(errors,[]);console.log('Studio UI passed: video + six KIE image models, shared connection, reference limits, 2K/4K/native, paid confirmation, dark theme and 320/390px layouts.');
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

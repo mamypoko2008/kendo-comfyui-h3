@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { createKieService, IMAGE_RATIOS, VIDEO_RATIOS } from './kie-client.mjs';
+import { IMAGE_MODELS, IMAGE_MODEL_IDS } from './image-models.mjs';
 
 export function registerKieTools(server, service = createKieService()) {
   const guard = handler => async args => {
@@ -12,11 +13,17 @@ export function registerKieTools(server, service = createKieService()) {
     request_id: z.string().min(8).max(100).describe('Stable ID for this generation. Reuse the SAME ID on retries, never automatically resubmit with a new ID.'),
     confirm_cost: z.literal(true).describe('Only true after the user authorizes this paid generation')
   };
-  server.registerTool('kie_status', { title: 'KIE connection status', description: 'Check whether the shared server-side KIE API key is configured. Does not spend credits.' }, guard(async () => ({ configured: service.configured(), models: ['Seedance 2.0', 'Seedance 2.5', 'Seedream 5.0 Pro'], next: 'Use kie_seedream_generate or kie_seedance_generate for an authorized paid request. Poll kie_job_status for results.' })));
+  server.registerTool('kie_status', { title: 'KIE connection status', description: 'Check whether the shared server-side KIE API key is configured. Does not spend credits.' }, guard(async () => ({ configured: service.configured(), models: ['Seedance 2.0', 'Seedance 2.5', ...Object.values(IMAGE_MODELS).map(m => m.name)], next: 'Read kie_image_models, then use kie_image_generate or kie_seedance_generate for an authorized paid request. Poll kie_job_status for results.' })));
+  server.registerTool('kie_image_models', { title: 'Available KIE image models', description: 'Read supported model IDs, resolutions, reference limits and approximate USD prices. No credits spent. Output format is provider-controlled when formats is empty.' }, guard(async () => ({ models: IMAGE_MODELS, checked_at: '2026-10-12' })));
+  server.registerTool('kie_image_generate', {
+    title: 'Create an image with a selected KIE model',
+    description: 'PAID: Seedream, FLUX, Qwen, Grok, Nano Banana Pro or GPT Image using the SAME server-side KIE key and Studio history. Read kie_image_models for per-model limits and prices before requesting cost authorization. Uses image-to-image automatically when references are present. Poll kie_job_status. Never automatically resubmit.',
+    inputSchema: { ...common, model: z.enum(IMAGE_MODEL_IDS).default('seedream-5-pro'), reference_urls: z.array(z.string().url()).max(16).default([]), ratio: z.string().default('1:1'), resolution: z.enum(['1K', '2K', '4K', 'native']).optional(), output_format: z.enum(['png', 'jpeg', 'jpg']).optional() }
+  }, guard(args => service.submit({ ...args, kind: 'image' })));
   server.registerTool('kie_seedream_generate', {
     title: 'Create an image with Seedream 5.0 Pro',
     description: 'PAID: Create one image via KIE, automatically selecting text-to-image or image-to-image. 1K costs $0.035; 2K costs $0.07; first input image free, additional inputs $0.0025 each. Up to 10 references. Returns a task ID; poll kie_job_status.',
-    inputSchema: { ...common, prompt: z.string().min(1).max(5000), reference_urls: z.array(z.string().url()).max(10).default([]), ratio: z.enum(IMAGE_RATIOS).default('1:1'), quality: z.enum(['basic', 'high']).default('basic'), output_format: z.enum(['png', 'jpeg']).default('png') }
+    inputSchema: { ...common, prompt: z.string().min(4).max(5000), reference_urls: z.array(z.string().url()).max(10).default([]), ratio: z.enum(IMAGE_RATIOS).default('1:1'), quality: z.enum(['basic', 'high']).default('basic'), output_format: z.enum(['png', 'jpeg']).default('png') }
   }, guard(args => service.submit({ ...args, kind: 'image' })));
   server.registerTool('kie_seedance_generate', {
     title: 'Create a video with Seedance 2.0 or 2.5',

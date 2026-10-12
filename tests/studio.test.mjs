@@ -6,10 +6,55 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { buildKiePayload, createKieService } from '../mcp/kie-client.mjs';
 import { createStudioServer } from '../mcp/studio-server.mjs';
+import { IMAGE_MODELS } from '../mcp/image-models.mjs';
 const require=createRequire(import.meta.url);
 const images=require('../web/workflow-images.js');
 const urls=n=>Array.from({length:n},(_,i)=>`https://example.org/ref-${i}.png`);
 const video={kind:'video',prompt:'A person walking naturally',request_id:'request-test-001',confirm_cost:true};
+
+test('KIE image adapters use documented model IDs and distinct input fields at 2K',()=>{
+  const base={kind:'image',prompt:'A glass perfume bottle',ratio:'1:1',reference_urls:urls(2)};
+  const cases=[
+    ['seedream-5-pro','seedream/5-pro-image-to-image','image_urls',.0725],
+    ['flux-2-pro','flux-2/pro-image-to-image','input_urls',.035],
+    ['qwen-3-pro','qwen3/pro-image-to-image','image_urls',.065],
+    ['grok-image-2','grok-imagine-image-2-0/image-edit','image_urls',.02],
+    ['nano-banana-pro','nano-banana-pro','image_input',.09],
+    ['gpt-image-2','gpt-image-2-image-to-image','input_urls',.05]
+  ];
+  for(const [id,provider,field,price] of cases) {
+    const result=buildKiePayload({...base,model:id});
+    assert.equal(result.payload.model,provider); assert.deepEqual(result.payload.input[field],base.reference_urls);
+    assert.equal(result.estimate_usd,price);
+    const text=buildKiePayload({...base,model:id,reference_urls:[]});
+    assert.equal(text.payload.model,IMAGE_MODELS[id].textModel);
+    assert.equal(text.payload.input.prompt,base.prompt);
+    if(id!=='nano-banana-pro') assert.equal(text.payload.input[field],undefined);
+  }
+  const seedream=buildKiePayload({...base,model:'seedream-5-pro'}).payload.input;
+  assert.equal(seedream.quality,'high');assert.equal(seedream.resolution,undefined);
+  const qwen=buildKiePayload({...base,model:'qwen-3-pro'}).payload.input;
+  assert.equal(qwen.image_size,'1:1');assert.equal(qwen.aspect_ratio,undefined);assert.equal(qwen.resolution,'2K');
+  const grok=buildKiePayload({...base,model:'grok-image-2'}).payload.input;
+  assert.equal(grok.resolution,undefined);assert.equal(grok.output_format,undefined);
+  assert.equal(buildKiePayload({...base,model:'nano-banana-pro',output_format:'jpg'}).payload.input.output_format,'jpg');
+  assert.equal(buildKiePayload({...base,quality:'basic'}).payload.input.quality,'basic'); // old MCP compatibility
+});
+
+test('unsupported image choices are blocked before any paid provider request',()=>{
+  const base={kind:'image',prompt:'A detailed landscape'};
+  for(const [id,m] of Object.entries(IMAGE_MODELS)) {
+    assert.throws(()=>buildKiePayload({...base,model:id,reference_urls:urls(m.maxImages+1)}),/Maximum/);
+  }
+  assert.throws(()=>buildKiePayload({...base,model:'grok-image-2',resolution:'2K'}),/resolution/);
+  assert.throws(()=>buildKiePayload({...base,model:'flux-2-pro',output_format:'png'}),/output format/);
+  assert.throws(()=>buildKiePayload({...base,model:'flux-2-pro',ratio:'21:9'}),/aspect ratio/);
+  assert.throws(()=>buildKiePayload({...base,model:'qwen-3-pro',quality:'high'}),/quality/);
+  assert.throws(()=>buildKiePayload({...base,quality:'basic',resolution:'2K'}),/conflict/);
+  assert.throws(()=>buildKiePayload({...base,model:'krea-2'}),/image model/);
+  assert.throws(()=>buildKiePayload({...base,prompt:'x'}),/4-5000/);
+  assert.equal(buildKiePayload({...base,model:'gpt-image-2',resolution:'4K'}).estimate_usd,.08);
+});
 
 test('model switch selects regular 2.0, changes billing and enforces provider limits',()=>{
   const v2=buildKiePayload({...video,model:'seedance-2',duration:10,resolution:'720p',reference_urls:urls(9)});
@@ -131,6 +176,29 @@ test('successful result is persisted locally; result download receives no API cr
   } finally {await fs.rm(dir,{recursive:true,force:true});}
 });
 
+test('KIE image results share persistent history and retain every returned PNG',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'kendo-kie-images-'));
+  const fake=async(url,init)=>{
+    if(url.includes('createTask')) {
+      const sent=JSON.parse(init.body);
+      assert.equal(sent.model,'qwen3/pro-text-to-image');assert.equal(sent.input.resolution,'2K');
+      return Response.json({code:200,data:{taskId:'image-multiple-01'}});
+    }
+    if(url.includes('recordInfo')) return Response.json({code:200,data:{state:'success',resultJson:JSON.stringify({resultUrls:['https://example.org/one.png','https://example.org/two.png']})}});
+    assert.equal(init.headers,undefined);
+    return new Response(Buffer.from('mock-png'),{headers:{'Content-Type':'image/png'}});
+  };
+  try {
+    const service=createKieService({dataDir:dir,apiKey:'not-a-real-key',fetchImpl:fake});
+    await service.submit({...video,kind:'image',model:'qwen-3-pro'});
+    const job=await service.getJob('image-multiple-01');
+    assert.equal(job.kind,'image');assert.equal(job.result_urls.length,2);
+    assert.match(job.result_urls[1],/result-2.png$/);
+    const restarted=createKieService({dataDir:dir,apiKey:'not-a-real-key',fetchImpl:fake});
+    assert.equal((await restarted.history())[0].model,'qwen3/pro-text-to-image');
+  } finally {await fs.rm(dir,{recursive:true,force:true});}
+});
+
 test('Studio requires the access code, same-origin requests and cost confirmation',async()=>{
   let submits=0;
   const server=createStudioServer({code:'studio-test-code',service:{configured:()=>true,history:async()=>[],submit:async args=>{submits++;return {task_id:'test',model:args.model};}}});
@@ -148,6 +216,11 @@ test('Studio requires the access code, same-origin requests and cost confirmatio
     assert.equal((await fetch(base+'/api/kie/jobs',{...authenticated,headers:{...authenticated.headers,Origin:'https://foreign.example'}})).status,403);
     assert.equal((await fetch(base+'/api/kie/jobs',authenticated)).status,200);
     assert.equal(submits,1);
+    const catalogue=await (await fetch(base+'/api/kie/image-models')).json();
+    assert.equal(Object.keys(catalogue.models).length,6);
+    assert.equal(catalogue.models['qwen-3-pro'].maxImages,3);
+    assert.equal((await fetch(base+'/api/kie/upload?model=qwen-3-pro',{method:'POST',headers:{Cookie:cookie,'Content-Type':'image/png','Content-Length':String(11*1024*1024)},body:new Uint8Array(11*1024*1024)})).status,413);
+    assert.equal((await fetch(base+'/api/kie/upload?model=unknown',{method:'POST',headers:{Cookie:cookie,'Content-Type':'image/png'},body:new Uint8Array(1)})).status,400);
     for(const page of ['/images.html','/seedance25.html','/workflow-images.js']) assert.equal((await fetch(base+page)).status,200);
     assert.equal((await fetch(base+'/../mcp/kie-client.mjs')).status,404);
   } finally {await new Promise(resolve=>server.close(resolve));}

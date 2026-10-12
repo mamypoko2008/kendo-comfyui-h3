@@ -1,15 +1,25 @@
 # Kendo-Seedance 2.5+Qwen (V3.1)
 
-Studio `v3.1.0-studio.2` pauses local Qwen image generation. The website now offers Seedance video only; old `/images.html` bookmarks redirect to `/seedance25.html`. Studio sets `KENDO_ENABLE_IMAGES=0`, hides the Qwen MCP tools and skips automatic Qwen model downloads. Existing ComfyUI, KIE tools, the MCP access URL and installed model files are retained. ComfyUI and KIE still share one MCP on port 3001. The RunPod template keeps its existing name and ID.
+Studio `v3.1.0-studio.3` adds **สร้างภาพนิ่ง** at `/images.html` with a model dropdown on the right. It uses the **same server-side KIE API key, access session and MCP URL** as the Seedance video page. Cloud image generation does not load Qwen on the Pod GPU. `KENDO_ENABLE_IMAGES=0` continues to disable the archived local Qwen tools/downloads.
 
-Current release published on 2026-10-10: [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8), image `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.2`. [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38059654529) succeeded. Public pull, amd64, entrypoint, source revision, disabled Qwen tools/download defaults, named services and unchanged storage were verified. Image digest: `sha256:b93b1f1614135f4c168450824106904b711bad0eb3dff2a122946a4bbb99f469`. The other 19 templates retained their names, image references, ports and service labels. No Pod was running or launched for this update; GPU inference remains unvalidated.
+| Model | Reference limit | Output | Listed USD estimate |
+| --- | --- | --- | --- |
+| Seedream 5.0 Pro | 10 · 30 MB/file | 1K / 2K | $0.035 / $0.07; first reference free, then $0.0025 each |
+| FLUX.2 Pro | 8 · 10 MB/file | 1K / 2K | $0.025 / $0.035 |
+| Qwen Image 3.0 Pro | 3 · 10 MB/file | 1K / 2K | $0.032 / $0.06, plus $0.0025/reference |
+| Grok Imagine Image 2.0 | 5 · 30 MB/file | Provider-selected | $0.02 |
+| Nano Banana Pro | 8 · 30 MB/file | 1K / 2K / 4K | $0.09 / $0.09 / $0.12 |
+| GPT Image 2 | 16 · Studio upload limit 30 MB/file | 1K / 2K / 4K | $0.03 / $0.05 / $0.08 |
 
-Previous image: `v3.1.0-studio.1`, [build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38056814904), digest `sha256:72778aa0a721a0eee826cc02b6ed9b4e032b70a143bc39be78e481db915d288f`. The template remains public, with 100 GB container disk and 100 GB persistent volume.
+Schema and pricing checked on 2026-10-12 using [KIE documentation](https://docs.kie.ai/market/quickstart), [Seedream](https://kie.ai/seedream-5-0-pro), [FLUX](https://kie.ai/flux-2), [Qwen](https://kie.ai/qwen-image-3), [Grok](https://kie.ai/grok-imagine-image-2), [Nano Banana Pro](https://kie.ai/nano-banana-pro), and [GPT Image 2](https://kie.ai/gpt-image-2). Prices are estimates; account billing and provider changes can differ. THB uses an editable estimate, not a live exchange rate.
 
-The video page uses the V3 light/dark design:
+2K is selected by default where supported. Reference slots start at 3 and add one per click. Switching models retains all attached files and blocks submission if the new model cannot accept them. Formats and aspect ratios match each model's schema; Grok is not labeled 2K because KIE's route exposes no resolution control. PNG/JPG format selection is shown only for models with an explicit output format input.
 
-- `/seedance25.html`: Seedance 2.5 or **regular** Seedance 2.0 via KIE. Review and confirm the price before submitting. The selector changes price, duration and reference limits. Images/text only; video-input billing is not included in these estimates.
-- `/images.html`: redirects to the video page. Local Qwen creation is paused.
+MCP: `kie_image_models` lists capabilities and estimates; `kie_image_generate` accepts a model ID and uses the shared KIE service. `kie_seedream_generate` remains compatible with existing clients. `kie_seedance_generate`, `kie_job_status` and `kie_history` remain on the same MCP endpoint. No additional connector or public port is needed. Both HTTP and MCP use `/api/v1/jobs/createTask` and per-model adapters, with durable request IDs to prevent duplicate paid submissions. Successful image/video tasks and downloaded results are shared on `/workspace/kendo-kie`.
+
+Validation: backend/MCP integration tests, mocked image/video generation, persisted image results, model/reference/format limits, light/dark UI and 320/390 px mobile layouts. **No actual paid KIE generation was submitted**; real provider results still need validation using the user's API key.
+
+Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.3`; publication receipt is in `runpod-studio-deployed.json`. Previous `.2` image remains available, digest `sha256:b93b1f1614135f4c168450824106904b711bad0eb3dff2a122946a4bbb99f469`.
 
 ## Archived Qwen 2.1 + Flux Klein workflow
 
@@ -43,13 +53,13 @@ docker build -f Dockerfile.v3-beta -t kendo-comfyui-h3:studio-base .
 docker build -f Dockerfile.studio -t kendo-comfyui-h3:studio .
 ```
 
-The inherited entrypoint reuses an existing ComfyUI installation on persistent volumes; it does not upgrade it automatically. Qwen creation is paused in studio.2, so no Qwen node/model setup is needed for the video page.
+The inherited entrypoint reuses an existing ComfyUI installation on persistent volumes; it does not upgrade it automatically. Local Qwen creation remains paused; KIE image generation needs no additional GPU model setup.
 
-The `Build Kendo-Seedance 2.5+Qwen` GitHub workflow builds and publishes `v3.1.0-studio.2` when manually dispatched, or a `v3.1.*-studio.*` tag when pushed. For the studio.2 release, `reuse_studio_runtime=true` uses `Dockerfile.studio-update` to retain the published studio.1 runtime and replace only the page, MCP server and entrypoint. `runpod-studio.json` describes the existing RunPod template named **Kendo-Seedance 2.5+Qwen**; release results are recorded in `runpod-studio-deployed.json` after verification.
+The `Build Kendo-Seedance 2.5+Qwen` GitHub workflow builds and publishes `v3.1.0-studio.3` when manually dispatched, or a `v3.1.*-studio.*` tag when pushed. For studio.3, `reuse_studio_runtime=true` uses `Dockerfile.studio-update` to retain the published studio.2 runtime and replace the Studio pages and shared KIE/MCP modules. `runpod-studio.json` describes the existing RunPod template named **Kendo-Seedance 2.5+Qwen**; release results are recorded in `runpod-studio-deployed.json` after verification.
 
 The published template's Connect service names are **Page HTML** (3000), **Comfy MCP** (3001), **ComfyUI** (8188), **JupyterLab** (8888), and **SSH** (22). These are RunPod template `portsConfig` values, separate from the exposed `ports` list. REST v1 does not accept `portsConfig`; apply the names through the template editor or GraphQL `saveTemplate` when recreating this template. The HTTP labels were verified on the running `ok4dx1nsvkpvlm` Pod without restarting it.
 
-The Studio image retains ComfyUI `0df64eb242b7c5759c3e86afd5d1846d923b1033`. Studio.2 disables automatic Qwen model downloads with `KENDO_ENABLE_IMAGES=0` and an empty `KENDO_IMAGE_MODELS`. Previously downloaded files remain on the volume. No new public port is required: pages and `/api/kie` stay on 3000; MCP stays on 3001. Studio's internal service listens on loopback 8766.
+The Studio image retains ComfyUI `0df64eb242b7c5759c3e86afd5d1846d923b1033`. Studio.3 disables automatic local Qwen model downloads with `KENDO_ENABLE_IMAGES=0` and an empty `KENDO_IMAGE_MODELS`. Previously downloaded files remain on the volume. No new public port is required: pages and `/api/kie` stay on 3000; MCP stays on 3001. Studio's internal service listens on loopback 8766.
 
 The Studio landing page is the Seedance page. H3 model downloads are off by default for this image; set `KENDO_AUTO_DOWNLOAD_MODELS=1` to retain local H3 generation as well.
 
@@ -63,9 +73,9 @@ No model download has been performed on the development computer. Docker buildin
 
 ## KIE setup
 
-Set `KIE_API_KEY` in the Pod environment. It stays server-side. Use the Pod's `KENDO_MCP_CODE` to connect the video page; this is the same access code as the existing MCP URL. The page never asks for the provider API key. KIE tasks/results are stored in `/workspace/kendo-kie` and shared with `kie_seedance_generate`, `kie_job_status` and `kie_history`. The previous Seedream MCP tool remains available.
+Set `KIE_API_KEY` in the Pod environment. It stays server-side. Use the Pod's `KENDO_MCP_CODE` to connect the video page; this is the same access code as the existing MCP URL. The page never asks for the provider API key. KIE tasks/results are stored in `/workspace/kendo-kie` and shared with `kie_seedance_generate`, `kie_job_status` and `kie_history`. Image generation uses `kie_image_generate` and `kie_image_models`; the previous Seedream MCP tool remains compatible.
 
-ComfyUI and KIE tools share `https://POD_ID-3001.proxy.runpod.net/mcp/ACCESS_CODE`. Studio.2 does not register `kendo_image_status`, `kendo_image_generate`, or `kendo_image_job_status`. The existing ComfyUI video/status/reference tools and KIE tools remain available on this same link.
+ComfyUI and KIE tools share `https://POD_ID-3001.proxy.runpod.net/mcp/ACCESS_CODE`. Studio.3 does not register `kendo_image_status`, `kendo_image_generate`, or `kendo_image_job_status`. The existing ComfyUI video/status/reference tools and KIE tools remain available on this same link.
 
 At 720p, text/image input: regular Seedance 2.0 **$0.205/s**, 2.5 **$0.315/s**. THB uses an editable conversion rate, initially 33.53; this is an estimate, not a live currency feed. Rates checked on 2026-10-10. These prices exclude Pod rental and payment fees. Failed/uncertain paid submissions are not automatically recreated.
 
@@ -75,7 +85,7 @@ Local preview with a ComfyUI instance on localhost:8188:
 node mcp/studio-server.mjs
 ```
 
-Open `http://127.0.0.1:8766/seedance25.html`. `/images.html` redirects there. Without KIE configuration, the video page supports layout and review previews while generation remains unavailable.
+Open `http://127.0.0.1:8766/seedance25.html`. `/images.html` is the cloud image page. Without KIE configuration, both pages support layout and review previews while generation remains unavailable.
 
 ## Qwen and Krea 2 compatibility
 

@@ -5,6 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createKieService, KieError } from './kie-client.mjs';
+import { IMAGE_MODELS } from './image-models.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime' };
@@ -56,6 +57,9 @@ export function createStudioServer(options = {}) {
         const auth = authenticated(req);
         return json(res, 200, { configured: service.configured(), authenticated: auth, access_configured: Boolean(code), mcp_url: auth ? mcpUrl.replace('{code}', encodeURIComponent(code)) : null });
       }
+      if (url.pathname === '/api/kie/image-models' && req.method === 'GET') {
+        return json(res, 200, { models: IMAGE_MODELS, checked_at: '2026-10-12' });
+      }
       if (url.pathname === '/api/kie/connect' && req.method === 'POST') {
         const input = await jsonBody(req);
         if (!matches(input.code, code)) return json(res, 401, { error: 'รหัสเข้า Studio / MCP ไม่ถูกต้อง' });
@@ -64,7 +68,12 @@ export function createStudioServer(options = {}) {
       }
       if (url.pathname.startsWith('/api/kie/')) {
         if (!authenticated(req)) return json(res, 401, { error: 'กรุณาเชื่อมต่อด้วยรหัส Studio / MCP ก่อน' });
-        if (url.pathname === '/api/kie/upload' && req.method === 'POST') return json(res, 200, await service.uploadImage(await body(req, 30 * 1024 * 1024), (req.headers['content-type'] ?? '').split(';')[0], url.searchParams.get('name') ?? 'reference'));
+        if (url.pathname === '/api/kie/upload' && req.method === 'POST') {
+          const modelId = url.searchParams.get('model');
+          if (modelId && !Object.hasOwn(IMAGE_MODELS, modelId)) throw new KieError('Invalid image model');
+          const limit = modelId ? IMAGE_MODELS[modelId].maxBytes : 30 * 1024 * 1024;
+          return json(res, 200, await service.uploadImage(await body(req, limit), (req.headers['content-type'] ?? '').split(';')[0], url.searchParams.get('name') ?? 'reference'));
+        }
         if (url.pathname === '/api/kie/jobs' && req.method === 'POST') {
           const input = await jsonBody(req);
           if (input.confirm_cost !== true) throw new KieError('Confirm the generation cost before submitting');

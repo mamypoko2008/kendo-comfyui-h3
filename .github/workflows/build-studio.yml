@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       reuse_studio_runtime:
-        description: Reuse studio.1 for the video-only studio.2 release
+        description: Reuse the published studio.2 ComfyUI runtime for studio.3
         type: boolean
         default: false
   push:
@@ -48,7 +48,7 @@ jobs:
       - name: Publish Studio image
         env:
           IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3
-          IMAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v3.1.0-studio.2' }}
+          IMAGE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'v3.1.0-studio.3' }}
         run: |
           docker tag kendo-comfyui-h3:studio "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"
           docker push "${IMAGE_REPOSITORY}:${IMAGE_VERSION}"
