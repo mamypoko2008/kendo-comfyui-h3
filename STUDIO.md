@@ -21,6 +21,10 @@ Validation: backend/MCP integration tests, mocked image/video generation, persis
 
 Existing [RunPod template](https://console.runpod.io/hub/template/9k0w23cmt8) keeps its name, ID, named services and 100 GB container/volume settings. The new image is `ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.1.0-studio.3`; publication receipt is in `runpod-studio-deployed.json`. Previous `.2` image remains available, digest `sha256:b93b1f1614135f4c168450824106904b711bad0eb3dff2a122946a4bbb99f469`.
 
+Published on 2026-10-12: [GitHub build](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/38253772037) succeeded. The public amd64 image, source revision, entrypoint and disabled local-Qwen defaults were verified. Digest: `sha256:e1519ece66323b40eb9496fe144f052459226fdb6d47c9b76edf4f81e552ecda`. The existing template now points at `.3`; its services/storage and all 19 other templates were verified unchanged. No Pod was launched. 28 Node tests, 13 Python tests and the mocked browser suite passed.
+
+The user confirmed that “Clear Tool” means **Krea 2**. No Krea 2 endpoint was found in the KIE model documentation/catalogue during this release check, so it is not exposed as a working KIE dropdown option. Adding a separate provider is outside this release's shared-KIE-key scope.
+
 ## Archived Qwen 2.1 + Flux Klein workflow
 
 The Qwen setup below documents the previous image experiment; it is disabled in the current Studio release.
