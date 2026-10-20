@@ -1,0 +1,33 @@
+{
+  "hash_id": "41ab82321bd133582ecf2ab0a25805bd",
+  "name": "Kendo-ComfyUI-H3 Fast V3 beta.15 (Vast)",
+  "image": "ghcr.io/mamypoko2008/kendo-comfyui-h3",
+  "tag": "vast-v3.0.0-beta.15-1",
+  "href": "https://github.com/mamypoko2008/kendo-comfyui-h3",
+  "repo": "https://github.com/mamypoko2008/kendo-comfyui-h3",
+  "env": "-p 3000:3000 -p 3001:3001 -p 8188:8188 -e KENDO_ENABLE_SAGE=auto -e KENDO_AUTO_DOWNLOAD_MODELS=1 -e KENDO_WAIT_FOR_MODELS=0",
+  "onstart": null,
+  "jup_direct": false,
+  "ssh_direct": false,
+  "use_jupyter_lab": false,
+  "runtype": "args",
+  "use_ssh": false,
+  "jupyter_dir": null,
+  "docker_login_repo": null,
+  "extra_filters": {
+    "verified": { "eq": true },
+    "external": { "eq": false },
+    "rentable": { "eq": true },
+    "num_gpus": { "eq": 1 },
+    "gpu_ram": { "gte": 30000 },
+    "cpu_ram": { "gte": 60000 },
+    "disk_space": { "gte": 100 },
+    "cuda_max_good": { "gte": 13.0 },
+    "reliability": { "gt": 0.98 }
+  },
+  "recommended_disk_space": 100,
+  "readme": "Kendo MiniMax H3 V3 beta.15 for Vast.ai. Docker Entrypoint mode only. Ports: Page 3000, MCP 3001, ComfyUI 8188. First launch downloads about 44.4 GB to /workspace. GPU and SageAttention are detected automatically; RTX 5090 and RTX PRO 6000 sm_120 use Sage when the import probe succeeds, otherwise Native attention is selected. Direct Vast ports are HTTP; Claude custom connectors require a separate public HTTPS tunnel.",
+  "readme_visible": true,
+  "desc": "MiniMax H3 V3 beta.15 for Vast.ai with 9 image, 1 video and 3 audio references, seed lock, MCP, GPU auto-detect and verified SageAttention status.",
+  "private": true
+}

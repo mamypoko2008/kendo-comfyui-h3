@@ -1,0 +1,23 @@
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.15
+
+ENV KENDO_IMAGE_VERSION=vast-v3.0.0-beta.15-1 \
+    KENDO_PLATFORM=vast \
+    KENDO_AUTO_DOWNLOAD_MODELS=1 \
+    KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_ENABLE_SAGE=auto \
+    KENDO_PAGE_PORT=3000 \
+    KENDO_MCP_HOST=0.0.0.0 \
+    KENDO_MCP_PORT=3001 \
+    KENDO_COMFY_PORT=8188 \
+    KENDO_COMFY_LOG_FILE=/workspace/comfyui.log
+
+COPY scripts/page_server_vast_v3.py /opt/kendo/page_server_vast_v3.py
+COPY scripts/entrypoint-vast-v3.sh /opt/kendo/entrypoint-vast-v3.sh
+RUN chmod 0755 /opt/kendo/entrypoint-vast-v3.sh
+
+EXPOSE 3000 3001 8188
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5m --retries=5 \
+  CMD python3.12 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/kendo/status', timeout=4)" || exit 1
+
+ENTRYPOINT ["/opt/kendo/entrypoint-vast-v3.sh"]
