@@ -9,6 +9,18 @@ removing the runtime dependency on RunPod's `/start.sh`.
 
 `ghcr.io/mamypoko2008/kendo-comfyui-h3:vast-v3.0.0-beta.15-1`
 
+## Published template
+
+Published to Vast.ai on 20 October 2026 as a private template:
+
+- Template ID: `771638`
+- Template hash: `b47e3cdb8ebc5b04e6c02360c1d4d724`
+- Source build: [GitHub Actions run 39362093149](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/39362093149)
+
+Vast.ai creates a new content-addressed template revision when the image and
+settings change. The previous V3 beta.6 template remains available separately;
+no instance was created or rented during publication.
+
 ## Vast.ai template settings
 
 - Launch mode: **Docker Entrypoint** (`runtype: args`)

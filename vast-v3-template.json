@@ -1,5 +1,6 @@
 {
-  "hash_id": "41ab82321bd133582ecf2ab0a25805bd",
+  "id": 771638,
+  "hash_id": "b47e3cdb8ebc5b04e6c02360c1d4d724",
   "name": "Kendo-ComfyUI-H3 Fast V3 beta.15 (Vast)",
   "image": "ghcr.io/mamypoko2008/kendo-comfyui-h3",
   "tag": "vast-v3.0.0-beta.15-1",
