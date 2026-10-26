@@ -1,0 +1,21 @@
+{
+  "id": "ok09ni9573",
+  "name": "Kendo-ComfyUI-H3 Fast v3 beta",
+  "templateUrl": "https://console.runpod.io/hub/template/ok09ni9573",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.16",
+  "imageDigest": "sha256:214ad0508c1dca6e58801e5675182397fc4b32ad7f97d8ec3d0ea882e20e3e77",
+  "sourceCommit": "3b1d2861f9d99c7c7c199ac8b0a3723477ef3bc5",
+  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/40264006822",
+  "deployedAt": "2026-10-26T03:49:27.8413177Z",
+  "containerDiskInGb": 100,
+  "volumeInGb": 100,
+  "volumeMountPath": "/workspace",
+  "isPublic": true,
+  "modelProfile": "fast",
+  "models": [
+    "MiniMax H3 Original INT8",
+    "Singularity V2 pruned INT8"
+  ],
+  "podLaunched": false,
+  "vastTemplateChanged": false
+}
