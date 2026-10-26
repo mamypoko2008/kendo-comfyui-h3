@@ -1,25 +1,25 @@
-# Kendo MiniMax H3 V3 beta.15 for Vast.ai
+# Kendo MiniMax H3 V3 beta.16 for Vast.ai
 
-This is a separate Vast.ai package of the immutable RunPod V3 beta.15 image.
+This is a separate Vast.ai package of the immutable RunPod V3 beta.16 image.
 It preserves the V3 Page, MiniMax H3 workflow, MCP server, seed controls,
 prompt-free history, GPU detection, and verified SageAttention status while
 removing the runtime dependency on RunPod's `/start.sh`.
 
+The Page model dropdown provides the original MiniMax H3 INT8 checkpoint and
+Singularity V2 pruned INT8 (20 GB). Original remains the default.
+
 ## Image
 
-`ghcr.io/mamypoko2008/kendo-comfyui-h3:vast-v3.0.0-beta.15-1`
+`ghcr.io/mamypoko2008/kendo-comfyui-h3:vast-v3.0.0-beta.16-1`
 
 ## Published template
 
-Published to Vast.ai on 20 October 2026 as a private template:
+The existing private V3 template is updated in place; its identity remains:
 
 - Template ID: `771638`
 - Template hash: `b47e3cdb8ebc5b04e6c02360c1d4d724`
-- Source build: [GitHub Actions run 39362093149](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/39362093149)
-
-Vast.ai creates a new content-addressed template revision when the image and
-settings change. The previous V3 beta.6 template remains available separately;
-no instance was created or rented during publication.
+- The beta.16 source build and resulting content-addressed revision are recorded
+  after publication. No instance is created or rented during publication.
 
 ## Vast.ai template settings
 
@@ -48,7 +48,7 @@ reference count.
 
 ## First launch and logs
 
-The first launch downloads roughly 44.4 GB of models into the persistent
+The first launch downloads roughly 65 GB of models into the persistent
 `/workspace/runpod-slim/ComfyUI/models` path. Downloads resume after an
 interruption. Logs are stored at:
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Vast.ai URL adapter around the immutable v3 beta.15 Page server."""
+"""Vast.ai URL adapter around the immutable v3 beta.16 Page server."""
 
 import os
 from http.server import ThreadingHTTPServer

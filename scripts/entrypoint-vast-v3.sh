@@ -16,13 +16,13 @@ export KENDO_MCP_HOST="${KENDO_MCP_HOST:-0.0.0.0}"
 export KENDO_RUNTIME_FILE="${KENDO_RUNTIME_FILE:-$workspace_dir/kendo-runtime.json}"
 export KENDO_COMFY_ARGS_FILE="$args_file"
 
-echo "[KENDO Vast V3] Preparing MiniMax H3 beta.15 environment"
+echo "[KENDO Vast V3] Preparing MiniMax H3 beta.16 environment"
 mkdir -p "$workspace_dir" "$(dirname "$comfyui_dir")"
 
 if [[ ! -f "$comfyui_dir/main.py" ]]; then
   rm -rf "$comfyui_dir"
   cp -a "$baked_dir" "$comfyui_dir"
-  echo "[KENDO Vast V3] Copied baked ComfyUI ${KENDO_IMAGE_VERSION:-vast-v3.0.0-beta.15-1} to workspace"
+  echo "[KENDO Vast V3] Copied baked ComfyUI ${KENDO_IMAGE_VERSION:-vast-v3.0.0-beta.16-1} to workspace"
 fi
 
 for node in ComfyUI-VideoHelperSuite ComfyUI-ALLinONE-MinimaxH3; do

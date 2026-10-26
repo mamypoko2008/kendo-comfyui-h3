@@ -9,8 +9,8 @@ ROOT = Path(__file__).parents[1]
 class VastV3PackagingTests(unittest.TestCase):
     def test_image_is_versioned_and_separate_from_runpod_and_vast_v2(self):
         dockerfile = (ROOT / 'Dockerfile.vast-v3').read_text(encoding='utf-8')
-        self.assertIn('v3.0.0-beta.15', dockerfile)
-        self.assertIn('KENDO_IMAGE_VERSION=vast-v3.0.0-beta.15-1', dockerfile)
+        self.assertIn('v3.0.0-beta.16', dockerfile)
+        self.assertIn('KENDO_IMAGE_VERSION=vast-v3.0.0-beta.16-1', dockerfile)
         self.assertIn('ENTRYPOINT ["/opt/kendo/entrypoint-vast-v3.sh"]', dockerfile)
         self.assertNotIn('Dockerfile.vast-v2', dockerfile)
 
@@ -35,7 +35,7 @@ class VastV3PackagingTests(unittest.TestCase):
     def test_template_reuses_old_v3_identity_without_locking_gpu_name(self):
         template = json.loads((ROOT / 'vast-v3-template.json').read_text(encoding='utf-8'))
         self.assertEqual(template['hash_id'], 'b47e3cdb8ebc5b04e6c02360c1d4d724')
-        self.assertEqual(template['tag'], 'vast-v3.0.0-beta.15-1')
+        self.assertEqual(template['tag'], 'vast-v3.0.0-beta.16-1')
         self.assertEqual(template['runtype'], 'args')
         self.assertEqual(template['recommended_disk_space'], 100)
         self.assertNotIn('gpu_name', template['extra_filters'])

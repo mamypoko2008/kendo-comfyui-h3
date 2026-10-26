@@ -1,9 +1,9 @@
 {
   "id": 771638,
   "hash_id": "b47e3cdb8ebc5b04e6c02360c1d4d724",
-  "name": "Kendo-ComfyUI-H3 Fast V3 beta.15 (Vast)",
+  "name": "Kendo-ComfyUI-H3 Fast V3 beta.16 (Vast)",
   "image": "ghcr.io/mamypoko2008/kendo-comfyui-h3",
-  "tag": "vast-v3.0.0-beta.15-1",
+  "tag": "vast-v3.0.0-beta.16-1",
   "href": "https://github.com/mamypoko2008/kendo-comfyui-h3",
   "repo": "https://github.com/mamypoko2008/kendo-comfyui-h3",
   "env": "-p 3000:3000 -p 3001:3001 -p 8188:8188 -e KENDO_ENABLE_SAGE=auto -e KENDO_AUTO_DOWNLOAD_MODELS=1 -e KENDO_WAIT_FOR_MODELS=0",
@@ -27,8 +27,8 @@
     "reliability": { "gt": 0.98 }
   },
   "recommended_disk_space": 100,
-  "readme": "Kendo MiniMax H3 V3 beta.15 for Vast.ai. Docker Entrypoint mode only. Ports: Page 3000, MCP 3001, ComfyUI 8188. First launch downloads about 44.4 GB to /workspace. GPU and SageAttention are detected automatically; RTX 5090 and RTX PRO 6000 sm_120 use Sage when the import probe succeeds, otherwise Native attention is selected. Direct Vast ports are HTTP; Claude custom connectors require a separate public HTTPS tunnel.",
+  "readme": "Kendo MiniMax H3 V3 beta.16 for Vast.ai. Docker Entrypoint mode only. Ports: Page 3000, MCP 3001, ComfyUI 8188. The model dropdown includes Original MiniMax H3 INT8 and Singularity V2 pruned INT8 (20 GB), with Original selected by default. First launch downloads about 65 GB to /workspace. GPU and SageAttention are detected automatically; RTX 5090 and RTX PRO 6000 sm_120 use Sage when the import probe succeeds, otherwise Native attention is selected. Direct Vast ports are HTTP; Claude custom connectors require a separate public HTTPS tunnel.",
   "readme_visible": true,
-  "desc": "MiniMax H3 V3 beta.15 for Vast.ai with 9 image, 1 video and 3 audio references, seed lock, MCP, GPU auto-detect and verified SageAttention status.",
+  "desc": "MiniMax H3 V3 beta.16 for Vast.ai with Original/Singularity model dropdown, 9 image, 1 video and 3 audio references, seed lock, MCP, GPU auto-detect and verified SageAttention status.",
   "private": true
 }
