@@ -1,6 +1,6 @@
 {
   "name": "Kendo-Pro6000-H3-Quaility",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.1.0-quality.2",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.1.0-quality.3",
   "category": "NVIDIA",
   "containerDiskInGb": 200,
   "dockerEntrypoint": [],
@@ -18,6 +18,7 @@
   "isServerless": false,
   "env": {
     "KENDO_ENABLE_SAGE": "1",
+    "KENDO_ENABLE_IMAGES": "0",
     "KENDO_AUTO_DOWNLOAD_MODELS": "1",
     "KENDO_WAIT_FOR_MODELS": "0",
     "KENDO_MCP_HOST": "0.0.0.0",

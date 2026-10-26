@@ -18,3 +18,10 @@ test('V4 tag builds always use the quality image definition',()=>{
  const workflow=fs.readFileSync(path.join(__dirname,'..','.github','workflows','build-v4.yml'),'utf8');
  assert.match(workflow,/file:\s*\$\{\{ inputs\.dockerfile \|\| 'Dockerfile\.v4-quality' \}\}/);
 });
+test('V4 quality image packages the complete MCP module graph without unused image tools',()=>{
+ const dockerfile=fs.readFileSync(path.join(__dirname,'..','Dockerfile.v4-quality'),'utf8');
+ for(const file of ['server.mjs','kie-client.mjs','kie-tools.mjs','image-tools.mjs','image-models.mjs']){
+  assert.match(dockerfile,new RegExp(`mcp/${file.replace('.','\\.')}`));
+ }
+ assert.match(dockerfile,/KENDO_ENABLE_IMAGES=0/);
+});
