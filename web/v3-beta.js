@@ -11,8 +11,8 @@ function renderRuntime(value){
   if(runtime.model_profile==='quality'){
     document.title='Kendo Studio | Pro6000 H3 Quality';
     document.querySelector('header>small').textContent='MiniMax H3 · Pro6000 Quality';
-    modelSelect.replaceChildren(Object.assign(document.createElement('option'),{value:'singularity-bf16',textContent:'Singularity V2 · BF16 66.3 GB'}));
-    modelSelect.value='singularity-bf16';modelSelect.disabled=true;
+    modelSelect.replaceChildren(Object.assign(document.createElement('option'),{value:'original-bf16',textContent:'Original Ref2VA · BF16 66.3 GB'}));
+    modelSelect.value='original-bf16';modelSelect.disabled=true;
     $('#model-hint').textContent='BF16 · RTX PRO 6000 96GB';
   }
   const badge=$('#attention-status');

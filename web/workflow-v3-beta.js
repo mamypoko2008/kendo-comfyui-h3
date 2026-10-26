@@ -3,10 +3,10 @@
   const MODELS = {
     original: 'minimax_h3_ref2va_pruned_int8_convrot.safetensors',
     singularity: 'Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors',
-    'singularity-bf16': 'Minimax-h3_Singularity_ref2va_v2_bf16.safetensors'
+    'original-bf16': 'minimax_h3_ref2va_bf16.safetensors'
   };
   function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), model, images = [], videos = [], audios = [], videoAudio = false, attentionMode = 'global_sage'}) {
-    const selectedModel = model || (typeof process !== 'undefined' && process.env?.KENDO_MODEL_PROFILE === 'quality' ? 'singularity-bf16' : 'original');
+    const selectedModel = model || (typeof process !== 'undefined' && process.env?.KENDO_MODEL_PROFILE === 'quality' ? 'original-bf16' : 'original');
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
     if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
@@ -34,7 +34,7 @@
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:selectedModel==='singularity-bf16'?'video/Kendo_H3_V4_Quality':selectedModel==='singularity'?'video/Kendo_H3_v3_Singularity':'video/Kendo_H3_v3',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:selectedModel==='original-bf16'?'video/Kendo_H3_V4_Quality':selectedModel==='singularity'?'video/Kendo_H3_v3_Singularity':'video/Kendo_H3_v3',format:'auto',codec:'auto',video:['video',0]})
     };
     if (!['global_sage','kj_memory'].includes(attentionMode)) throw new Error('Invalid attention mode');
     if (attentionMode === 'kj_memory' && root.KENDO_LOCAL_RUNTIME?.kj_sage_available) {

@@ -15,7 +15,7 @@ COMMON_SPECS = (
 )
 if PROFILE == 'quality':
     MODEL_SPECS = (
-        ('diffusion_models/Minimax-h3_Singularity_ref2va_v2_bf16.safetensors', 66280498488),
+        ('diffusion_models/minimax_h3_ref2va_bf16.safetensors', 66280487368),
     ) + COMMON_SPECS
 else:
     MODEL_SPECS = (
