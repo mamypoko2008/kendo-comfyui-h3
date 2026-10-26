@@ -1,7 +1,7 @@
 # Quality edition: the V3 generation stack with the full Singularity V2 BF16 checkpoint.
 # No LTX, RTX VSR, or other upscale nodes are installed.
 FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.15
-ENV KENDO_IMAGE_VERSION=4.1.0-quality.1 \
+ENV KENDO_IMAGE_VERSION=4.1.0-quality.2 \
     KENDO_MODEL_PROFILE=quality \
     KENDO_AUTO_DOWNLOAD_MODELS=1 \
     KENDO_WAIT_FOR_MODELS=0 \

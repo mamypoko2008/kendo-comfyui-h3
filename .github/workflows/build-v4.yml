@@ -47,7 +47,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ inputs.dockerfile || 'Dockerfile.v4-update' }}
+          file: ${{ inputs.dockerfile || 'Dockerfile.v4-quality' }}
           platforms: linux/amd64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:${{ github.ref_type == 'tag' && github.ref_name || inputs.image_tag }}

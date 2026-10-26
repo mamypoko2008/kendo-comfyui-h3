@@ -1,5 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const v3=require('../web/workflow-v3-beta.js');
 const v4=require('../web/workflow-v4.js');
 test('V4 preserves H3 generation, references and seed with its own output prefix',()=>{
@@ -11,4 +13,8 @@ test('V4 preserves H3 generation, references and seed with its own output prefix
   next.save.inputs.filename_prefix=old.save.inputs.filename_prefix;
   assert.deepEqual(next,old);
  }
+});
+test('V4 tag builds always use the quality image definition',()=>{
+ const workflow=fs.readFileSync(path.join(__dirname,'..','.github','workflows','build-v4.yml'),'utf8');
+ assert.match(workflow,/file:\s*\$\{\{ inputs\.dockerfile \|\| 'Dockerfile\.v4-quality' \}\}/);
 });
