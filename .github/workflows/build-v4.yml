@@ -10,9 +10,10 @@ on:
         description: Image build definition
         type: choice
         options:
+          - Dockerfile.v4-quality
           - Dockerfile.v4-update
           - Dockerfile.v4
-        default: Dockerfile.v4-update
+        default: Dockerfile.v4-quality
   push:
     tags:
       - 'v4.*'

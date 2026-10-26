@@ -1,10 +1,17 @@
 /* Shared by the browser and dependency-free workflow tests. */
 (function (root) {
-  function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), images = [], videos = [], audios = [], videoAudio = false, attentionMode = 'global_sage'}) {
+  const MODELS = {
+    original: 'minimax_h3_ref2va_pruned_int8_convrot.safetensors',
+    singularity: 'Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors',
+    'singularity-bf16': 'Minimax-h3_Singularity_ref2va_v2_bf16.safetensors'
+  };
+  function buildWorkflow({prompt, ratio, megapixels, duration, steps, seed = Math.floor(Math.random() * 0x100000000), model, images = [], videos = [], audios = [], videoAudio = false, attentionMode = 'global_sage'}) {
+    const selectedModel = model || (typeof process !== 'undefined' && process.env?.KENDO_MODEL_PROFILE === 'quality' ? 'singularity-bf16' : 'original');
     if (images.length > 9 || videos.length > 1 || audios.length > 3) throw new Error('Reference limit exceeded');
     if (!prompt.trim()) throw new Error('Prompt is required');
     if (!(duration >= 5 && duration <= 20) || !(steps >= 1 && steps <= 50)) throw new Error('Invalid generation settings');
     if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) throw new Error('Invalid seed');
+    if (!MODELS[selectedModel]) throw new Error('Invalid model');
     const sizes = {'0.4':[864,480], '0.7':[1152,640], '1':[1376,768], '1.2':[1504,832], '1.5':[1632,928], '2':[1920,1088]};
     if (!sizes[String(megapixels)] || !['16:9','9:16','1:1'].includes(ratio)) throw new Error('Invalid resolution');
     let [width,height] = sizes[String(megapixels)];
@@ -13,7 +20,7 @@
     const frames = Math.ceil((Math.round(duration * 24) - 5) / 17) * 17 + 5;
     const n = (class_type, inputs) => ({class_type, inputs});
     const w = {
-      model:n('UNETLoader',{unet_name:'minimax_h3_ref2va_pruned_int8_convrot.safetensors',weight_dtype:'default'}),
+      model:n('UNETLoader',{unet_name:MODELS[selectedModel],weight_dtype:'default'}),
       turbo:n('LoraLoaderModelOnly',{lora_name:'minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors',strength_model:1,model:['model',0]}),
       clip:n('CLIPLoader',{clip_name:'qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors',type:'minimax',device:'default'}),
       vae:n('VAELoader',{vae_name:'minimax_h3_video_vae_fp16.safetensors'}),
@@ -27,7 +34,7 @@
       decode:n('VAEDecode',{samples:['sample',0],vae:['vae',0]}),
       decodeAudio:n('VAEDecodeAudio',{samples:['sample',0],vae:['audioVae',0]}),
       video:n('CreateVideo',{fps:24,bit_depth:8,images:['decode',0],audio:['decodeAudio',0]}),
-      save:n('SaveVideo',{filename_prefix:'video/Kendo_H3_v3',format:'auto',codec:'auto',video:['video',0]})
+      save:n('SaveVideo',{filename_prefix:selectedModel==='singularity-bf16'?'video/Kendo_H3_V4_Quality':selectedModel==='singularity'?'video/Kendo_H3_v3_Singularity':'video/Kendo_H3_v3',format:'auto',codec:'auto',video:['video',0]})
     };
     if (!['global_sage','kj_memory'].includes(attentionMode)) throw new Error('Invalid attention mode');
     if (attentionMode === 'kj_memory' && root.KENDO_LOCAL_RUNTIME?.kj_sage_available) {

@@ -68,6 +68,7 @@ def main():
         reason = f"GPU compute capability {gpu.get('compute_capability') or 'unknown'} is not sm_120"
     runtime = {
         'setup': os.environ.get('KENDO_IMAGE_VERSION', 'runpod'),
+        'model_profile': os.environ.get('KENDO_MODEL_PROFILE', 'fast'),
         'gpu': gpu,
         'sage': {'requested': requested, 'available': available, 'compatible': compatible,
                  'active': active, 'version': version, 'reason': reason},

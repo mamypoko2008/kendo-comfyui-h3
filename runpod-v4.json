@@ -1,6 +1,6 @@
 {
-  "name": "Kendo-ComfyUI-H3 V4 beta.2",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2",
+  "name": "Kendo-Pro6000-H3-Quaility",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.1.0-quality.1",
   "category": "NVIDIA",
   "containerDiskInGb": 200,
   "dockerEntrypoint": [],
@@ -21,7 +21,7 @@
     "KENDO_AUTO_DOWNLOAD_MODELS": "1",
     "KENDO_WAIT_FOR_MODELS": "0",
     "KENDO_MCP_HOST": "0.0.0.0",
-    "KENDO_UPSCALE_MAX_SECONDS": "60"
+    "KENDO_MODEL_PROFILE": "quality"
   },
-  "readme": "Kendo Studio V4: MiniMax H3 generation plus a separate Upscale page using LTX 2.5 Refine Details/Tiled Fusion. Select a completed clip or a file from the generated-files page, or upload MP4/MOV/WebM. Aspect ratio is read from the source. 1080p/4K output keeps source frame count/fps/audio; no before/after comparison. Container disk 200 GB. Use a separate V4 persistent volume of at least 200 GB. If attaching a Network Volume, verify that volume is at least 200 GB; it has its own size. H3 plus LTX model files total about 115 GB, before outputs and temporary files. Accept Lightricks model access on Hugging Face and set HF_TOKEN in the Pod environment before first download. Services: Page 3000, MCP 3001, ComfyUI 8188, JupyterLab 8888. V4 beta.2 adds graceful API response handling and free-space checks before model downloads. GPU inference still needs validation; begin with a short 1080p clip."
+  "readme": "Kendo-Pro6000-H3-Quaility uses the full Singularity V2 BF16 checkpoint (66.3 GB) with exactly the same standard MiniMax H3 Ref2VA nodes as Fast V3: UNET loader, Turbo LoRA, reference conditioning, sampler, video/audio VAEs and SageAttention when compatible. Upscale/LTX/RTX VSR nodes are not included. Recommended hardware is an unsliced RTX PRO 6000 Blackwell with 96 GB VRAM and at least 128 GB system RAM. Use a separate persistent volume of at least 200 GB at /workspace. First launch downloads about 90 GB of model files with resume support. Services: Page 3000, Claude MCP 3001, ComfyUI 8188, JupyterLab 8888."
 }

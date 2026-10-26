@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import time
-from models_v3_beta import MODEL_ROOT, MODEL_SPECS, REPO, READY_FILE, ERROR_FILE
+from models_v3_beta import MODEL_ROOT, MODEL_SPECS, READY_FILE, ERROR_FILE, model_url
 
 def download(relative, expected):
     target = Path(MODEL_ROOT, relative)
@@ -22,7 +22,7 @@ def download(relative, expected):
         '--file-allocation=none', '--max-tries=20', '--retry-wait=5', '--connect-timeout=30',
         '--timeout=60', '--min-split-size=16M', '--summary-interval=5',
         '--max-connection-per-server=' + connections, '--split=' + connections,
-        '--dir=' + str(target.parent), '--out=' + partial.name, REPO + relative + '?download=true'
+        '--dir=' + str(target.parent), '--out=' + partial.name, model_url(relative)
     ], check=True)
     if partial.stat().st_size != expected:
         raise RuntimeError('Incorrect size: ' + relative)

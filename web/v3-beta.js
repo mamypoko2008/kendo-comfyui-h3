@@ -7,6 +7,14 @@ let ready=false,submitting=false,lastSeed=null;
 const jobs=new Map();
 function renderRuntime(value){
   const runtime=value||globalThis.KENDO_LOCAL_RUNTIME||{};
+  const modelSelect=$('#model-select');
+  if(runtime.model_profile==='quality'){
+    document.title='Kendo Studio | Pro6000 H3 Quality';
+    document.querySelector('header>small').textContent='MiniMax H3 · Pro6000 Quality';
+    modelSelect.replaceChildren(Object.assign(document.createElement('option'),{value:'singularity-bf16',textContent:'Singularity V2 · BF16 66.3 GB'}));
+    modelSelect.value='singularity-bf16';modelSelect.disabled=true;
+    $('#model-hint').textContent='BF16 · RTX PRO 6000 96GB';
+  }
   const badge=$('#attention-status');
   const sage=runtime.sage&&typeof runtime.sage==='object'?runtime.sage:{};
   const active=sage.active===true||runtime.global_sage===true||runtime.sage===true;
@@ -147,7 +155,7 @@ async function generate(){
   const seed=$('#seed-lock').checked?Number($('#seed').value):randomSeed();
   lastSeed=seed;$('#seed').value=String(seed);$('#reuse-latest-seed').hidden=false;$('#reuse-latest-seed').textContent='ใช้ Seed ล่าสุดต่อ · '+seed;
   const selected={images:media.image.map(x=>x.file),videos:$('#video-enabled').checked?media.video.map(x=>x.file):[],audios:$('#audio-enabled').checked?media.audio.map(x=>x.file):[]};
-  const settings={prompt,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),seed,videoAudio:$('#video-audio').checked,attentionMode:$('#attention-mode').value};
+  const settings={prompt,model:$('#model-select').value,ratio:$('#ratio').value,megapixels:Number($('#quality').value),duration:Number($('#duration').value),steps:Number($('#steps').value),seed,videoAudio:$('#video-audio').checked,attentionMode:$('#attention-mode').value};
   try{KendoWorkflow.buildWorkflow({...settings,images:[],videos:[],audios:[]})}catch(e){return notice(e.message)}
   submitting=true;updateButton();notice('กำลังอัปโหลดไฟล์…');
   try{const names={};for(const [kind,files] of Object.entries(selected)){names[kind]=[];for(const file of files)names[kind].push(await upload(file))}const workflow=KendoWorkflow.buildWorkflow({...settings,...names});const result=await api('/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:workflow,client_id:crypto.randomUUID()})});if(!result.prompt_id)throw new Error('ไม่พบหมายเลขงาน');jobs.set(result.prompt_id,true);$('#activity').textContent=`${jobs.size} งานในคิว`;notice('ส่งเข้าคิวแล้ว · Seed '+seed);void monitor(result.prompt_id,seed)}catch(e){notice(String(e.message))}finally{submitting=false;updateButton()}

@@ -42,6 +42,22 @@ test('v3 clips are saved under their own prefix so history can tell releases apa
  assert.equal(buildWorkflow(base).save.inputs.filename_prefix,'video/Kendo_H3_v3');
  assert.equal(require('../web/workflow.js').buildWorkflow(base).save.inputs.filename_prefix,'video/Kendo_H3_v2');
 });
+test('V3 model selector switches between original and Singularity V2 checkpoints',()=>{
+ assert.equal(buildWorkflow({...base,model:'original'}).model.inputs.unet_name,'minimax_h3_ref2va_pruned_int8_convrot.safetensors');
+ assert.equal(buildWorkflow({...base,model:'singularity'}).model.inputs.unet_name,'Minimax-h3_Singularity_ref2va_v2_pruned_int8.safetensors');
+ assert.equal(buildWorkflow({...base,model:'singularity'}).save.inputs.filename_prefix,'video/Kendo_H3_v3_Singularity');
+ assert.throws(()=>buildWorkflow({...base,model:'unknown'}),/model/);
+});
+test('V4 quality profile defaults the same V3 graph to Singularity BF16',()=>{
+ const old=process.env.KENDO_MODEL_PROFILE;process.env.KENDO_MODEL_PROFILE='quality';
+ try{
+  const w=buildWorkflow(base);
+  assert.equal(w.model.inputs.unet_name,'Minimax-h3_Singularity_ref2va_v2_bf16.safetensors');
+  assert.equal(w.save.inputs.filename_prefix,'video/Kendo_H3_V4_Quality');
+  assert.equal(w.turbo.class_type,'LoraLoaderModelOnly');
+  assert.equal(w.reference.class_type,'MiniMaxH3ReferenceToVideo');
+ }finally{if(old===undefined)delete process.env.KENDO_MODEL_PROFILE;else process.env.KENDO_MODEL_PROFILE=old}
+});
 test('Local V4 defaults to global Sage and only inserts KJ patch in memory mode',()=>{
  globalThis.KENDO_LOCAL_RUNTIME={sage:true,global_sage:true,kj_sage_available:true};
  try{
