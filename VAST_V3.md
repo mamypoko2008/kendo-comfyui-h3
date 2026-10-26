@@ -14,12 +14,15 @@ Singularity V2 pruned INT8 (20 GB). Original remains the default.
 
 ## Published template
 
-The existing private V3 template is updated in place; its identity remains:
+Updated on 26 October 2026 as the existing private V3 template:
 
 - Template ID: `771638`
-- Template hash: `b47e3cdb8ebc5b04e6c02360c1d4d724`
-- The beta.16 source build and resulting content-addressed revision are recorded
-  after publication. No instance is created or rented during publication.
+- Template hash: `c0a1c870d859da55d5936322f0ac2ffe`
+- Source build: [GitHub Actions run 40276224290](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/40276224290)
+- Image digest: `sha256:b107972f3ea7479cc15453f1432609682f5bbc1cee92307d5e43919cd5b37e7a`
+
+No instance was created or rented during publication. Other Vast.ai templates
+were verified unchanged.
 
 ## Vast.ai template settings
 

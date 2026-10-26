@@ -34,7 +34,7 @@ class VastV3PackagingTests(unittest.TestCase):
 
     def test_template_reuses_old_v3_identity_without_locking_gpu_name(self):
         template = json.loads((ROOT / 'vast-v3-template.json').read_text(encoding='utf-8'))
-        self.assertEqual(template['hash_id'], 'b47e3cdb8ebc5b04e6c02360c1d4d724')
+        self.assertEqual(template['hash_id'], 'c0a1c870d859da55d5936322f0ac2ffe')
         self.assertEqual(template['tag'], 'vast-v3.0.0-beta.16-1')
         self.assertEqual(template['runtype'], 'args')
         self.assertEqual(template['recommended_disk_space'], 100)
