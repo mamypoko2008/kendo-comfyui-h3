@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 (async()=>{
- const server=http.createServer((req,res)=>{const name=req.url==='/'?'v3-beta.html':req.url.slice(1);if(!['v3-beta.html','v3-beta.js','v3-beta.css','workflow-v3-beta.js'].includes(name)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(__dirname,'../web',name)))});
+ const server=http.createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname,name=pathname==='/'?'v3-beta.html':pathname.slice(1);if(!['v3-beta.html','v3-beta.js','v3-beta.css','workflow-v3-beta.js','runtime-v4-local.js'].includes(name)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(__dirname,'../web',name)))});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
  let browser;
  try{
@@ -14,15 +14,27 @@ const assert = require('node:assert/strict');
   await page.addInitScript(()=>localStorage.setItem('kendo-h3-v3-history',JSON.stringify([{url:'/api/comfy/view?filename=old.mp4',prompt:'PROMPT MUST NOT APPEAR',seed:2847193051}])));
   let ready=false,submitted,uploads=0;const uploadNames=[];
   let mcpUrl='https://pod123-3001.proxy.runpod.net/mcp/kendo-abc';
+  const historyEntry=(sequence,id,filename,seed)=>({prompt:[sequence,id,{reference:{class_type:'MiniMaxH3ReferenceToVideo',inputs:{}},noise:{class_type:'RandomNoise',inputs:{noise_seed:seed}},save:{class_type:'SaveVideo',inputs:{filename_prefix:'video/Kendo_H3_v3'}}}],outputs:{video:{images:[{filename,subfolder:'video',type:'output'}]}},status:{status_str:'success'}});
+  let historyPayload={'mcp-job':historyEntry(2,'mcp-job','Kendo_H3_v3_00002.mp4',777)};
   await page.route('**/api/kendo/status',r=>r.fulfill({json:{models_ready:ready,comfy_ready:true,progress:ready?100:42,mcp_ready:true,mcp_url:mcpUrl}}));
   await page.route('**/api/comfy/queue',r=>r.fulfill({json:{queue_running:[['1','active-job']],queue_pending:[['2','waiting-a'],['3','waiting-b']]}}));
-  await page.route('**/api/comfy/history?*',r=>r.fulfill({json:{'mcp-job':{prompt:[0,'mcp-job',{reference:{class_type:'MiniMaxH3ReferenceToVideo',inputs:{}},noise:{class_type:'RandomNoise',inputs:{noise_seed:777}},save:{class_type:'SaveVideo',inputs:{filename_prefix:'video/Kendo_H3_v3'}}}],outputs:{video:{images:[{filename:'Kendo_H3_v3_00001.mp4',subfolder:'video',type:'output'}]}},status:{status_str:'success'}}}}));
+  await page.route('**/api/comfy/history?*',r=>r.fulfill({json:historyPayload}));
   await page.route('**/api/comfy/upload/image',r=>{uploads++;const m=/filename="([^"]+)"/.exec(r.request().postData()||'');if(m)uploadNames.push(m[1]);return r.fulfill({json:{name:'uploaded-'+uploads+'.mp4',subfolder:''}})});
   await page.route('**/api/comfy/prompt',r=>{submitted=r.request().postDataJSON();return r.fulfill({json:{prompt_id:'test'}})});
   await page.route('**/api/comfy/history/*',r=>r.fulfill({json:{}}));
   await page.goto('http://127.0.0.1:'+server.address().port);
   await page.waitForFunction(()=>document.querySelectorAll('#history article').length===2);
-  assert.ok((await page.locator('#history article video').first().getAttribute('src')).includes('Kendo_H3_v3_00001.mp4'),'Claude-submitted clip is merged into history first');
+  assert.ok((await page.locator('#history article video').first().getAttribute('src')).includes('Kendo_H3_v3_00002.mp4'),'Claude-submitted clip is merged into history first');
+  await page.locator('#history article video').first().evaluate(video=>video.dataset.keep='same-node');
+  historyPayload={
+    'older-job':historyEntry(1,'older-job','Kendo_H3_v3_00001.mp4',111),
+    'newer-job':historyEntry(3,'newer-job','Kendo_H3_v3_00003.mp4',333),
+    'mcp-job':historyEntry(2,'mcp-job','Kendo_H3_v3_00002.mp4',777)
+  };
+  await page.evaluate(()=>syncServerHistory());
+  await page.waitForFunction(()=>document.querySelectorAll('#history article').length===4);
+  assert.ok((await page.locator('#history article video').nth(0).getAttribute('src')).includes('00003.mp4'),'history is sorted by ComfyUI sequence, not response object order');
+  assert.equal(await page.locator('#history article video').nth(1).getAttribute('data-keep'),'same-node','existing video node is preserved instead of reloaded');
   await page.waitForSelector('#claude:not([hidden])');
   await page.waitForFunction(()=>document.querySelector('#queue-active-count').textContent==='1'&&document.querySelector('#queue-pending-count').textContent==='2');
   assert.equal(await page.locator('#console-panel').getAttribute('open'),null);
@@ -38,7 +50,7 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('#video-enabled').isChecked(),false);
   assert.equal(await page.locator('#video-body').isHidden(),true);
   assert.equal(await page.locator('#seed-lock').isChecked(),false);
-  await page.locator('.history-actions button').nth(1).click();
+  await page.getByRole('button',{name:'Seed 2847193051 · ใช้ต่อ'}).click();
   assert.equal(await page.locator('#seed-lock').isChecked(),true);
   assert.equal(await page.locator('#seed').inputValue(),'2847193051');
   assert.equal(await page.locator('#advanced').getAttribute('open'),'');

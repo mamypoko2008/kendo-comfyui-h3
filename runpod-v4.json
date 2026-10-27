@@ -1,6 +1,6 @@
 {
   "name": "Kendo-Pro6000-H3-Quaility",
-  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.1.0-quality.4",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.1.0-quality.5",
   "category": "NVIDIA",
   "containerDiskInGb": 200,
   "dockerEntrypoint": [],
