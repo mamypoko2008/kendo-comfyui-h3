@@ -1,0 +1,21 @@
+{
+  "name": "Kendo-ComfyUI-H3 V4 beta.2",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2",
+  "category": "NVIDIA",
+  "containerDiskInGb": 100,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 120,
+  "volumeMountPath": "/workspace",
+  "ports": ["3000/http", "3001/http", "8188/http", "8888/http", "22/tcp"],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "1",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MCP_HOST": "0.0.0.0",
+    "KENDO_DUAL_PASS": "1"
+  },
+  "readme": "## Open services\n\n- **Page** — Port `3000`\n- **Claude MCP** — Port `3001` (public HTTPS proxy, secret access-code path, no IP lock)\n- **ComfyUI** — Port `8188`\n- **JupyterLab** — Port `8888`\n\nKendo MiniMax H3 V4 beta.2 keeps the stable V3 Fast mode and adds an optional High Resolution dual-pass pipeline. High Resolution generates a 0.4–0.7 MP base latent, preserves its audio branch, upscales only the video latent by 1.5x or 2x with the pinned H3 3D neural upscaler, then refines the low-sigma tail before decoding. Optional Realism People and Facial Detail LoRAs are available. Fast remains the default. The Page supports 9 images / 1 video / 3 audio references, seed lock, queue status, prompt-free history, Comfy log and Claude MCP. First launch downloads both INT8 diffusion models plus the shared encoder, VAEs, Turbo/quality LoRAs and the 691 MB latent upscaler (about 66 GB total) with resume support. High Resolution saves time versus native full-resolution generation but does not reduce peak VRAM; RTX PRO 6000 96 GB is recommended for long 2x jobs. V3, V2 and existing V4 templates remain separate."
+}

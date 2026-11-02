@@ -33,12 +33,13 @@ const CONFIG = {
   // Tests serve fixtures from loopback; never enable this on a Pod.
   allowLoopback: env('KENDO_MCP_ALLOW_LOOPBACK', '0') === '1'
 };
+const DUAL_PASS = env('KENDO_DUAL_PASS', '0') === '1';
 const { buildWorkflow } = require(CONFIG.workflowFile);
 
 const KINDS = { image: ['png', 'jpg', 'jpeg', 'webp'], video: ['mp4', 'webm', 'mov'], audio: ['wav', 'mp3', 'flac', 'ogg', 'm4a'] };
 const MIME_EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/wave': 'wav', 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/flac': 'flac', 'audio/x-flac': 'flac', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a' };
 const kindOf = name => Object.keys(KINDS).find(kind => KINDS[kind].includes(path.extname(name).slice(1).toLowerCase())) || null;
-const SIZES = { '0.4': [864, 480], '0.7': [1152, 640], '1': [1376, 768], '1.2': [1504, 832], '1.5': [1632, 928], '2': [1920, 1088] };
+const SIZES = { '0.4': [864, 480], '0.5': [960, 544], '0.7': [1152, 640], '1': [1376, 768], '1.2': [1504, 832], '1.5': [1632, 928], '2': [1920, 1088] };
 
 class ToolError extends Error {}
 
@@ -217,22 +218,32 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
     return { uploaded, failed, hint: 'Pass uploaded[].name to kendo_generate (images / video / audios).' };
   }));
 
+  const generationSchema = {
+    prompt: z.string().min(1).max(20000).describe('Scene, motion, camera and sound description. Use <Picture 1> style tags to bind references.'),
+    images: z.array(z.string()).max(9).default([]).describe('Up to 9 image reference file names from kendo_list_references / kendo_upload_from_url'),
+    video: z.string().optional().describe('Optional video reference file name (first output-duration seconds are used at 24 fps)'),
+    video_audio: z.boolean().default(false).describe('Also use the soundtrack of the video reference'),
+    audios: z.array(z.string()).max(3).default([]).describe('Up to 3 audio reference file names'),
+    ratio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
+    megapixels: (DUAL_PASS ? z.enum(['0.4', '0.5', '0.7', '1', '1.2', '1.5', '2']) : z.enum(['0.4', '0.7', '1', '1.2', '1.5', '2'])).default('0.7').describe('Base/output size preset. High Resolution mode accepts at most 0.7 MP.'),
+    duration: z.number().int().min(5).max(20).default(5).describe('Seconds, 5-20'),
+    steps: z.number().int().min(1).max(50).default(10).describe('Sampling steps; Fast defaults to 10 and High Resolution recommends 8'),
+    seed: z.number().int().min(0).max(4294967295).optional().describe('Fixed seed for reproducibility; random when omitted')
+  };
+  if (DUAL_PASS) Object.assign(generationSchema, {
+    model: z.enum(['original', 'singularity']).default('original').describe('Original H3 INT8 or Singularity V2 pruned INT8'),
+    render_mode: z.enum(['fast', 'highres']).default('fast').describe('Fast single pass or High Resolution dual pass'),
+    upscale_factor: z.enum(['1.5', '2']).default('2').describe('Video-latent scale used in High Resolution mode'),
+    realism: z.boolean().default(false).describe('Enable Realism People LoRA at 0.3'),
+    facial: z.boolean().default(false).describe('Enable Facial Detail LoRA at 1.0'),
+    attention_mode: z.enum(['global_sage', 'kj_memory']).default('global_sage')
+  });
   server.registerTool('kendo_generate', {
     title: 'Generate video',
     description: 'Queues a MiniMax H3 Ref2VA video from a prompt plus optional references stored in the Pod. Returns a job_id immediately; poll kendo_job_status for the result. Reference tags: <Picture N> for images (order of the images array), <Video 1> for the video, <Audio N> for audio (video soundtrack first when video_audio is true).',
-    inputSchema: {
-      prompt: z.string().min(1).max(20000).describe('Scene, motion, camera and sound description. Use <Picture 1> style tags to bind references.'),
-      images: z.array(z.string()).max(9).default([]).describe('Up to 9 image reference file names from kendo_list_references / kendo_upload_from_url'),
-      video: z.string().optional().describe('Optional video reference file name (first output-duration seconds are used at 24 fps)'),
-      video_audio: z.boolean().default(false).describe('Also use the soundtrack of the video reference'),
-      audios: z.array(z.string()).max(3).default([]).describe('Up to 3 audio reference file names'),
-      ratio: z.enum(['16:9', '9:16', '1:1']).default('16:9'),
-      megapixels: z.enum(['0.4', '0.7', '1', '1.2', '1.5', '2']).default('0.7').describe('Output size preset: 0.4 Draft (864x480), 0.7 Balanced (1152x640), 1 (1376x768), 1.2 (1504x832), 1.5 (1632x928), 2 (1920x1088)'),
-      duration: z.number().int().min(5).max(20).default(5).describe('Seconds, 5-20'),
-      steps: z.number().int().min(1).max(50).default(10).describe('Sampling steps; the Turbo LoRA default is 10'),
-      seed: z.number().int().min(0).max(4294967295).optional().describe('Fixed seed for reproducibility; random when omitted')
-    }
-  }, guard(async ({ prompt, images = [], video, video_audio = false, audios = [], ratio = '16:9', megapixels = '0.7', duration = 5, steps = 10, seed }) => {
+    inputSchema: generationSchema
+  }, guard(async ({ prompt, images = [], video, video_audio = false, audios = [], ratio = '16:9', megapixels = '0.7', duration = 5, steps = 10, seed,
+    model = 'original', render_mode = 'fast', upscale_factor = '2', realism = false, facial = false, attention_mode = 'global_sage' }) => {
     const status = await pageStatus();
     if (!status.models_ready || !status.comfy_ready) throw new ToolError(status.download_error ? 'Model download failed on the Pod; restart the Pod. ' + status.download_error : `Pod not ready yet: models ${status.progress ?? 0}% downloaded, ComfyUI ${status.comfy_ready ? 'running' : 'starting'}. Retry in a minute.`);
     const imageNames = await Promise.all(images.map(name => requireReference(name, 'image')));
@@ -240,7 +251,8 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
     const audioNames = await Promise.all(audios.map(name => requireReference(name, 'audio')));
     const finalSeed = seed ?? crypto.randomInt(0, 4294967296);
     let workflow;
-    try { workflow = buildWorkflow({ prompt, ratio, megapixels: Number(megapixels), duration, steps, seed: finalSeed, images: imageNames, videos: videoNames, audios: audioNames, videoAudio: video_audio && videoNames.length > 0 }); } catch (error) { throw new ToolError(error.message); }
+    try { workflow = buildWorkflow({ prompt, ratio, megapixels: Number(megapixels), duration, steps, seed: finalSeed, images: imageNames, videos: videoNames, audios: audioNames, videoAudio: video_audio && videoNames.length > 0,
+      model, renderMode: render_mode, upscaleFactor: Number(upscale_factor), realismEnabled: realism, facialEnabled: facial, attentionMode: attention_mode }); } catch (error) { throw new ToolError(error.message); }
     const submitted = await comfy('/prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: workflow, client_id: 'kendo-mcp-' + crypto.randomUUID() }) });
     if (!submitted.prompt_id) throw new ToolError('ComfyUI did not return a job id: ' + JSON.stringify(submitted));
     const tags = {};
@@ -248,8 +260,10 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
     let audioIndex = 1;
     if (videoNames.length) { tags['<Video 1>'] = videoNames[0]; if (video_audio) tags[`<Audio ${audioIndex++}>`] = videoNames[0] + ' (soundtrack)'; }
     audioNames.forEach(name => { tags[`<Audio ${audioIndex++}>`] = name; });
-    const [width, height] = ratio === '9:16' ? [...SIZES[megapixels]].reverse() : ratio === '1:1' ? [workflow.reference.inputs.width, workflow.reference.inputs.height] : SIZES[megapixels];
-    return { job_id: submitted.prompt_id, seed: finalSeed, queue_position: submitted.number ?? null, width, height, duration_seconds: duration, steps, tags, next: 'Poll kendo_job_status with this job_id every 15-30 seconds.' };
+    let [width, height] = ratio === '9:16' ? [...(SIZES[megapixels] || [960, 544])].reverse() : ratio === '1:1' ? [workflow.reference.inputs.width, workflow.reference.inputs.height] : (SIZES[megapixels] || [960, 544]);
+    if (DUAL_PASS && render_mode === 'highres') { const scale = Number(upscale_factor); width = Math.round(width * scale / 32) * 32; height = Math.round(height * scale / 32) * 32; }
+    return { job_id: submitted.prompt_id, seed: finalSeed, queue_position: submitted.number ?? null, width, height, duration_seconds: duration, steps,
+      render_mode: DUAL_PASS ? render_mode : 'fast', model: DUAL_PASS ? model : 'original', tags, next: 'Poll kendo_job_status with this job_id every 15-30 seconds.' };
   }));
 
   server.registerTool('kendo_job_status', {

@@ -1,0 +1,35 @@
+# Kendo H3 V4 beta.2: stable V3 RunPod/MCP stack plus optional dual-pass latent upscale.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v3.0.0-beta.17
+
+ARG H3_UPSCALER_COMMIT=40316cf008b2fd8663263270669eb4da23f89d2c
+ARG H3_YC_NODES_COMMIT=efbe83f69ffa97a251a575ce42edc7bf8005da0c
+
+ENV KENDO_IMAGE_VERSION=4.0.0-beta.2 \
+    KENDO_MODEL_PROFILE=v4-beta2 \
+    KENDO_DUAL_PASS=1 \
+    KENDO_WORKFLOW_FILE=/opt/kendo-page/workflow-v4-beta2.js \
+    KENDO_AUTO_DOWNLOAD_MODELS=1 \
+    KENDO_WAIT_FOR_MODELS=0 \
+    KENDO_ENABLE_SAGE=1 \
+    KENDO_MCP_HOST=0.0.0.0
+
+USER root
+RUN set -eux; \
+    git clone https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler.git \
+      /opt/comfyui-baked/custom_nodes/Comfyui_Minimax_h3_latent_Upscaler; \
+    git -C /opt/comfyui-baked/custom_nodes/Comfyui_Minimax_h3_latent_Upscaler checkout "${H3_UPSCALER_COMMIT}"; \
+    git clone https://github.com/yichengup/ComfyUI-YCNodes-MiniMax-H3.git \
+      /opt/comfyui-baked/custom_nodes/ComfyUI-YCNodes-MiniMax-H3; \
+    git -C /opt/comfyui-baked/custom_nodes/ComfyUI-YCNodes-MiniMax-H3 checkout "${H3_YC_NODES_COMMIT}"
+
+COPY scripts/models_v4_beta2.py scripts/download_models_v4_beta2.py /opt/kendo/
+COPY scripts/download-v4-beta2.sh /opt/kendo/download-models.sh
+COPY scripts/page_server_v3_beta.py /opt/kendo/page_server_v3_beta.py
+COPY scripts/page_server_v4_beta2.py /opt/kendo/page_server.py
+COPY web/v4-beta2.html /opt/kendo-page/index.html
+COPY web/v4-beta2.html web/v4-beta2.css web/v4-beta2-ui.js web/workflow-v4-beta2.js /opt/kendo-page/
+COPY web/v3-beta.css web/v3-beta.js web/runtime-v4-local.js web/files.html web/files.js /opt/kendo-page/
+COPY scripts/entrypoint-v4-beta2.sh /opt/kendo/entrypoint-v4-beta2.sh
+RUN chmod 0755 /opt/kendo/download-models.sh /opt/kendo/entrypoint-v4-beta2.sh
+
+ENTRYPOINT ["/opt/kendo/entrypoint-v4-beta2.sh"]
