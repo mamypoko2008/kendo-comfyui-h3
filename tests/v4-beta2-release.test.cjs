@@ -9,6 +9,8 @@ test('V4 beta.2 image pins both required custom node commits',()=>{
   assert.match(docker,/H3_UPSCALER_COMMIT=40316cf008b2fd8663263270669eb4da23f89d2c/);
   assert.match(docker,/H3_YC_NODES_COMMIT=efbe83f69ffa97a251a575ce42edc7bf8005da0c/);
   assert.match(docker,/KENDO_WORKFLOW_FILE=\/opt\/kendo-page\/workflow-v4-beta2\.js/);
+  assert.match(docker,/KENDO_DUAL_PASS=1/);
+  assert.match(docker,/COPY mcp\/server\.mjs \/opt\/kendo-mcp\/server\.mjs/);
   assert.match(docker,/ENTRYPOINT \["\/opt\/kendo\/entrypoint-v4-beta2\.sh"\]/);
 });
 

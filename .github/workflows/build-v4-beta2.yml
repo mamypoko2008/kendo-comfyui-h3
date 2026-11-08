@@ -22,6 +22,7 @@ jobs:
         run: |
           node --test tests/workflow-v4-beta2.test.cjs tests/workflow-v3-beta.test.cjs tests/v4-beta2-release.test.cjs
           node --test tests/mcp-v3-beta.test.mjs
+          node --test tests/mcp-v4-beta2-schema.test.mjs
           python -m unittest discover -s tests -p test_v4_beta2.py -v
           bash -n scripts/download-v4-beta2.sh scripts/entrypoint-v4-beta2.sh
       - name: Free space

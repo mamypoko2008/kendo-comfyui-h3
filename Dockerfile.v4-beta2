@@ -22,6 +22,9 @@ RUN set -eux; \
       /opt/comfyui-baked/custom_nodes/ComfyUI-YCNodes-MiniMax-H3; \
     git -C /opt/comfyui-baked/custom_nodes/ComfyUI-YCNodes-MiniMax-H3 checkout "${H3_YC_NODES_COMMIT}"
 
+# V4 extends the V3 MCP schema with model selection and dual-pass controls.
+# Copy it explicitly so the inherited V3 server is not left in the image.
+COPY mcp/server.mjs /opt/kendo-mcp/server.mjs
 COPY scripts/models_v4_beta2.py scripts/download_models_v4_beta2.py /opt/kendo/
 COPY scripts/download-v4-beta2.sh /opt/kendo/download-models.sh
 COPY scripts/page_server_v3_beta.py /opt/kendo/page_server_v3_beta.py
