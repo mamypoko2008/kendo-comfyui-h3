@@ -1,0 +1,24 @@
+{
+  "name": "Kendo-ComfyUI-H3 V4 beta.3",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.3",
+  "category": "NVIDIA",
+  "containerDiskInGb": 200,
+  "dockerEntrypoint": [],
+  "dockerStartCmd": [],
+  "volumeInGb": 200,
+  "volumeMountPath": "/workspace",
+  "ports": ["3000/http", "3001/http", "8188/http", "8888/http", "22/tcp"],
+  "isPublic": true,
+  "isServerless": false,
+  "env": {
+    "KENDO_ENABLE_SAGE": "1",
+    "KENDO_AUTO_DOWNLOAD_MODELS": "1",
+    "KENDO_WAIT_FOR_MODELS": "0",
+    "KENDO_MCP_HOST": "0.0.0.0",
+    "KENDO_ENABLE_IMAGES": "1",
+    "KENDO_IMAGE_PAGE_PATH": "/h3-image.html",
+    "KENDO_IMAGE_DEFAULT_MODEL": "h3image",
+    "KENDO_IMAGE_DEFAULT_RESOLUTION": "2K"
+  },
+  "readme": "## Kendo V4 beta.3\n\nV3-compatible MiniMax H3 video generation plus official MiniMax H3 Image INT8 still-image generation/editing. No Singularity model and no latent-upscale nodes.\n\n- **Page** — port `3000`: Video H3 and H3 Image modes\n- **Claude MCP** — port `3001`: one public HTTPS URL, secret path, no IP lock. It exposes `kendo_generate` and `kendo_image_generate` plus their status tools.\n- **ComfyUI** — port `8188`\n- **JupyterLab** — port `8888`\n\nH3 Image uses the native ComfyUI workflow (ComfyUI 0.45.0), INT8 diffusion/text encoder, Euler/simple, CFG 1 and fixed 6 steps. It supports text-to-image and editing with up to 16 image references, ratios from 1:1 through 3:1/1:3, and 1K, 2K, 4K or MAX up to 20 MP. MAX can approach an 8K long edge only on extreme aspect ratios. First launch downloads about 94 GB of video + image weights with resume and exact-size verification. Storage defaults are 200 GB container and 200 GB volume. SageAttention is runtime-detected for RTX 5090 / RTX PRO 6000 with Native fallback."
+}

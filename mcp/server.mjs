@@ -176,12 +176,12 @@ const guard = handler => async (args, extra) => {
   }
 };
 
-const INSTRUCTIONS = `Kendo Studio MiniMax H3 video generator running inside a RunPod Pod.
+const INSTRUCTIONS = `Kendo Studio MiniMax H3 video and still-image generator running inside a RunPod Pod.
 Typical flow: (1) kendo_status until models_ready and comfy_ready are true. (2) Put reference files into the Pod with kendo_upload_from_url (any public image/video/audio URL, e.g. results from an image generator) or read the files the user uploaded on the Page with kendo_list_references. (3) kendo_generate with the prompt; refer to references inside the prompt as <Picture 1>, <Picture 2> (order of the images array), <Video 1>, and <Audio 1..3> (video soundtrack first when video_audio is true, then standalone audios). (4) Poll kendo_job_status every 15-30 seconds until status is done, then give the user the video_url. Generation usually takes a few minutes; never block on it.
 KIE video flow: kie_status, then kie_seedance_generate (seedance-2 is regular 2.0; seedance-2-5 is 2.5). KIE image flow: kie_image_models, then kie_image_generate with a supported model ID; all image models use the same KIE key. Only set confirm_cost=true for a user-authorized paid request; poll kie_job_status. Do not automatically recreate a task after connection failures. All tools share this MCP URL.`;
 
 function createServer({ enableImages = CONFIG.enableImages } = {}) {
-  const instructions = INSTRUCTIONS + (enableImages ? '\nLocal Qwen image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Qwen uses no KIE credits.' : '');
+  const instructions = INSTRUCTIONS + (enableImages ? '\nLocal still-image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Use kendo_upload_from_url or Page uploads for reference files. Local generation uses no KIE credits.' : '');
   const server = new McpServer({ name: process.env.KENDO_MCP_NAME || 'kendo-h3', version: VERSION }, { instructions });
   registerKieTools(server);
   if (enableImages) registerImageTools(server);
@@ -208,7 +208,7 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
   server.registerTool('kendo_upload_from_url', {
     title: 'Upload references from URLs',
     description: 'Downloads public image (png/jpg/webp), video (mp4/webm/mov) or audio (wav/mp3/flac/ogg/m4a) URLs into the Pod so they can be used as references. Returns the stored file names to pass to kendo_generate. Max 512 MB per file.',
-    inputSchema: { urls: z.array(z.string().url()).min(1).max(13).describe('Public http(s) URLs to download'), names: z.array(z.string().max(48)).optional().describe('Optional readable base names, same order as urls (e.g. "hero-front", "cafe-location")') }
+    inputSchema: { urls: z.array(z.string().url()).min(1).max(16).describe('Public http(s) URLs to download'), names: z.array(z.string().max(48)).optional().describe('Optional readable base names, same order as urls (e.g. "hero-front", "cafe-location")') }
   }, guard(async ({ urls, names = [] }) => {
     const uploaded = [], failed = [];
     for (const [index, url] of urls.entries()) {
