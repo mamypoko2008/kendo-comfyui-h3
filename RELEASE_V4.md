@@ -4,6 +4,8 @@
 
 V4 beta.4 keeps the beta.3 Video H3 and native H3 Image workflows separate while routing Page and MCP submissions through one mode manager. A cross-mode request is accepted only when the ComfyUI queue is idle; the manager calls ComfyUI `/free` with both model unload and memory release before submitting the new workflow. Repeated jobs in the same mode retain the model cache. The RunPod template remains `tlitx232d4` with 200 GB container disk and 200 GB persistent volume.
 
+Published on 12 November 2026 from source `c767624`. [Build 43170263487](https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/43170263487) passed and published digest `sha256:549f4ccf154046da182fab0c8c519c74b9f15b504f9ad3298142219070592598`. The existing [RunPod template](https://console.runpod.io/hub/template/tlitx232d4) was updated in place; its storage, ports, service labels and visibility were preserved, and 20 unrelated templates were verified unchanged. No Pod was opened.
+
 ## beta.2 — API recovery and storage checks
 
 Published on 7 October 2026. Open [RunPod Template V4 beta.2](https://console.runpod.io/hub/template/tlitx232d4), template ID `tlitx232d4`. The saved template uses `ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.2`, container disk 200 GB, and persistent volume 200 GB. Anonymous public registry verification confirmed Linux amd64, version beta.2, and the V4 entrypoint. Image digest: `sha256:cf31c72384448daf6ee96a02b4d0ba9f273f25001373d6c8f54de1babdfa04fb`.

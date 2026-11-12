@@ -1,0 +1,16 @@
+{
+  "id": "tlitx232d4",
+  "name": "Kendo-ComfyUI-H3 V4 beta.4",
+  "imageName": "ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.4",
+  "imageDigest": "sha256:549f4ccf154046da182fab0c8c519c74b9f15b504f9ad3298142219070592598",
+  "sourceCommit": "c767624",
+  "buildUrl": "https://github.com/mamypoko2008/kendo-comfyui-h3/actions/runs/43170263487",
+  "templateUrl": "https://console.runpod.io/hub/template/tlitx232d4",
+  "containerDiskInGb": 200,
+  "volumeInGb": 200,
+  "volumeMountPath": "/workspace",
+  "managedModes": true,
+  "gpuInferenceValidated": false,
+  "unrelatedTemplatesVerifiedUnchanged": 20,
+  "deployedAt": "2026-11-12T13:49:00+07:00"
+}
