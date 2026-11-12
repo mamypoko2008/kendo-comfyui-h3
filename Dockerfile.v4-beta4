@@ -1,0 +1,27 @@
+# Kendo H3 V4 beta.4: beta.3 models with serialized Video/Image VRAM switching.
+FROM ghcr.io/mamypoko2008/kendo-comfyui-h3:v4.0.0-beta.3
+
+ENV KENDO_IMAGE_VERSION=4.0.0-beta.4 \
+    KENDO_MANAGED_MODES=1 \
+    KENDO_IMAGE_PAGE_PATH=/h3-image-v4-beta4.html \
+    KENDO_MCP_NAME="Kendo V4 MiniMax H3 Video + Image · Managed VRAM"
+
+USER root
+COPY mcp/server.mjs mcp/image-tools.mjs /opt/kendo-mcp/
+COPY scripts/models_v4_beta3.py scripts/page_server_v3_beta.py scripts/page_server_v4_beta3.py scripts/page_server_v4_beta4.py /opt/kendo/
+COPY scripts/page_server_v4_beta4.py /opt/kendo/page_server.py
+COPY web/mode-manager-v4.js /opt/kendo-page/
+
+# Keep V3's proven video UI/workflow and H3 Image UI/workflow as separate pages.
+# Only these beta.4 copies load the mode manager; V3 and beta.3 remain untouched.
+RUN set -eux; \
+    cp /opt/kendo-page/v4-beta3.html /opt/kendo-page/v4-beta4.html; \
+    cp /opt/kendo-page/h3-image.html /opt/kendo-page/h3-image-v4-beta4.html; \
+    cp /opt/kendo-page/v4-beta4.html /opt/kendo-page/index.html; \
+    for page in /opt/kendo-page/index.html /opt/kendo-page/v4-beta4.html /opt/kendo-page/h3-image-v4-beta4.html; do \
+      sed -i 's#V4 beta\.3#V4 beta.4#g; s#v4-beta3\.html#v4-beta4.html#g; s#h3-image\.html#h3-image-v4-beta4.html#g; s#4\.0\.0-beta\.3#4.0.0-beta.4#g' "$page"; \
+      sed -i 's#</body>#<script src="/mode-manager-v4.js?v=4.0.0-beta.4"></script></body>#' "$page"; \
+    done; \
+    python3.12 -m compileall -q /opt/kendo
+
+ENTRYPOINT ["/opt/kendo/entrypoint-v4-beta3.sh"]

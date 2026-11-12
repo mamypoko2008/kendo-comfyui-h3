@@ -17,6 +17,10 @@ export function registerImageTools(server, options = {}) {
   const defaultResolution=Number(options.defaultResolution??process.env.KENDO_IMAGE_DEFAULT_RESOLUTION??1024);
   const imagePage=options.imagePage??process.env.KENDO_IMAGE_PAGE_PATH??'/images.html';
   const capability=native.MCP??null;
+  const submitPrompt=options.submitPrompt??(async (prompt, clientId) => comfy('/prompt', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, client_id: clientId })
+  }));
   const family=capability?.family??'Qwen Image 2.1';
   const maxReferences=capability?.maxReferences??10;
   const ratios=capability?.ratios??['1:1','4:3','3:4','3:2','2:3','16:9','9:16'];
@@ -68,7 +72,7 @@ export function registerImageTools(server, options = {}) {
       if (!stat?.isFile()) throw new Error('Reference image is not in the ComfyUI input directory: ' + name);
     }
     const prompt = native.buildWorkflow({ ...args, ...ready.files });
-    const task = await comfy('/prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, client_id: 'kendo-images-mcp' }) });
+    const task = await submitPrompt(prompt, 'kendo-images-mcp');
     if (!task.prompt_id) throw new Error('ComfyUI did not return a prompt ID; check the queue before resubmitting');
     return { prompt_id: task.prompt_id, model: args.model, status: 'queued', page_url: pageUrl + imagePage };
   }));

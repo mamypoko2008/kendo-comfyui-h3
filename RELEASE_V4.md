@@ -1,4 +1,8 @@
-# Kendo Studio V4 · 4.0.0-beta.2
+# Kendo Studio V4 · 4.0.0-beta.4
+
+## beta.4 — managed Video/Image VRAM switching
+
+V4 beta.4 keeps the beta.3 Video H3 and native H3 Image workflows separate while routing Page and MCP submissions through one mode manager. A cross-mode request is accepted only when the ComfyUI queue is idle; the manager calls ComfyUI `/free` with both model unload and memory release before submitting the new workflow. Repeated jobs in the same mode retain the model cache. The RunPod template remains `tlitx232d4` with 200 GB container disk and 200 GB persistent volume.
 
 ## beta.2 — API recovery and storage checks
 

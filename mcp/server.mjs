@@ -34,6 +34,7 @@ const CONFIG = {
   allowLoopback: env('KENDO_MCP_ALLOW_LOOPBACK', '0') === '1'
 };
 const DUAL_PASS = env('KENDO_DUAL_PASS', '0') === '1';
+const MANAGED_MODES = env('KENDO_MANAGED_MODES', '0') === '1';
 const { buildWorkflow } = require(CONFIG.workflowFile);
 
 const KINDS = { image: ['png', 'jpg', 'jpeg', 'webp'], video: ['mp4', 'webm', 'mov'], audio: ['wav', 'mp3', 'flac', 'ogg', 'm4a'] };
@@ -68,6 +69,27 @@ async function pageStatus() {
   } catch {
     return { models_ready: false, comfy_ready: false, progress: 0, download_error: null, page_unreachable: true };
   }
+}
+
+async function submitPrompt(mode, prompt, clientId) {
+  const request = { prompt, client_id: clientId };
+  if (!MANAGED_MODES) {
+    return comfy('/prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  }
+  let response;
+  try {
+    response = await fetch(CONFIG.page + '/api/kendo/prompt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, ...request }), signal: AbortSignal.timeout(120000)
+    });
+  } catch (error) {
+    throw new ToolError('Kendo mode manager is not reachable: ' + error.message);
+  }
+  const text = await response.text();
+  let body;
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { raw: text }; }
+  if (!response.ok) throw new ToolError(body.error || `Kendo mode manager ${response.status}`);
+  return body;
 }
 
 function videoUrl(file) {
@@ -184,7 +206,9 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
   const instructions = INSTRUCTIONS + (enableImages ? '\nLocal still-image flow: kendo_image_status, then kendo_image_generate using GPU on this Pod; poll kendo_image_job_status. Use kendo_upload_from_url or Page uploads for reference files. Local generation uses no KIE credits.' : '');
   const server = new McpServer({ name: process.env.KENDO_MCP_NAME || 'kendo-h3', version: VERSION }, { instructions });
   registerKieTools(server);
-  if (enableImages) registerImageTools(server);
+  if (enableImages) registerImageTools(server, MANAGED_MODES ? {
+    submitPrompt: (prompt, clientId) => submitPrompt('image', prompt, clientId)
+  } : {});
 
   server.registerTool('kendo_status', {
     title: 'Kendo status',
@@ -253,7 +277,7 @@ function createServer({ enableImages = CONFIG.enableImages } = {}) {
     let workflow;
     try { workflow = buildWorkflow({ prompt, ratio, megapixels: Number(megapixels), duration, steps, seed: finalSeed, images: imageNames, videos: videoNames, audios: audioNames, videoAudio: video_audio && videoNames.length > 0,
       model, renderMode: render_mode, upscaleFactor: Number(upscale_factor), realismEnabled: realism, facialEnabled: facial, attentionMode: attention_mode }); } catch (error) { throw new ToolError(error.message); }
-    const submitted = await comfy('/prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: workflow, client_id: 'kendo-mcp-' + crypto.randomUUID() }) });
+    const submitted = await submitPrompt('video', workflow, 'kendo-mcp-' + crypto.randomUUID());
     if (!submitted.prompt_id) throw new ToolError('ComfyUI did not return a job id: ' + JSON.stringify(submitted));
     const tags = {};
     imageNames.forEach((name, i) => { tags[`<Picture ${i + 1}>`] = name; });

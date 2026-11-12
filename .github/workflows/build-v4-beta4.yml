@@ -1,0 +1,46 @@
+name: Build KENDO H3 V4 beta.4
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+        working-directory: mcp
+      - name: Test managed Video/Image modes and V3 compatibility
+        run: |
+          node --test tests/workflow-h3-image.test.cjs tests/workflow-v3-beta.test.cjs tests/v4-beta4-release.test.cjs
+          node --test tests/mcp-v4-beta4.test.mjs
+          python -m unittest discover -s tests -p test_v4_beta4.py -v
+      - name: Free space
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish V4 beta.4
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.v4-beta4
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/kendo-comfyui-h3:v4.0.0-beta.4
+          labels: |
+            org.opencontainers.image.title=Kendo-ComfyUI-H3 V4 beta.4
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=v4-beta4
+          cache-to: type=gha,scope=v4-beta4,mode=max
